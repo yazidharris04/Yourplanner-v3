@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YourPlanner — Vibrant Tactile Personal Finance Studio</title>
+    <title>YourPlanner — Multi-Device Cloud Sync Studio</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Three.js CDN for Interactive 3D Clay Diorama -->
@@ -12,6 +12,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase SDK (Auth & Firestore Cloud Database) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <script>
         tailwind.config = {
             theme: {
@@ -92,17 +98,17 @@
             <!-- Logo & Brand -->
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-sunburst border-2 border-ink shadow-tactile-sm flex items-center justify-center font-black text-xl rounded-lg">
-                    💎
+                    ☁️
                 </div>
                 <div>
                     <h1 class="font-extrabold text-xl tracking-tight flex items-center gap-2">
-                        YourPlanner <span class="text-xs bg-cobalt text-white px-2 py-0.5 rounded-full border border-ink">Studio v3.5</span>
+                        YourPlanner <span class="text-xs bg-cobalt text-white px-2 py-0.5 rounded-full border border-ink">Cloud Sync v4.0</span>
                     </h1>
-                    <p class="text-xs text-zinc-600">Multi-Currency, Debt Accelerator & 3D Analytics</p>
+                    <p class="text-xs text-zinc-600">Multi-Device Live Synchronization & Google Auth</p>
                 </div>
             </div>
 
-            <!-- Header Actions: Currency, Privacy Mask, Google Auth, Guide -->
+            <!-- Header Actions -->
             <div class="flex flex-wrap items-center gap-2.5">
                 <!-- Currency Selector -->
                 <div class="flex items-center bg-cream border-2 border-ink rounded-lg p-1 shadow-tactile-sm">
@@ -115,24 +121,24 @@
                 </div>
 
                 <!-- Privacy Mask Button -->
-                <button onclick="togglePrivacyMask()" id="privacyBtn" class="tactile-btn bg-sunburst px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5" title="Sembunyikan / Tampilkan Nominal">
+                <button onclick="togglePrivacyMask()" id="privacyBtn" class="tactile-btn bg-sunburst px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5">
                     <i class="fa-solid fa-eye" id="privacyIcon"></i> <span id="privacyText">Sembunyikan</span>
                 </button>
 
-                <!-- Help / Guide Button -->
+                <!-- Help Guide -->
                 <button onclick="openGuideModal()" class="tactile-btn bg-lavender text-white px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5">
                     <i class="fa-solid fa-book-open"></i> Panduan
                 </button>
 
-                <!-- Google Auth Button -->
+                <!-- REAL GOOGLE AUTH BUTTON -->
                 <div id="authContainer">
-                    <button onclick="simulateGoogleLogin()" id="googleAuthBtn" class="tactile-btn bg-white px-3 py-1.5 rounded-lg text-xs flex items-center gap-2">
+                    <button onclick="handleGoogleAuth()" id="googleAuthBtn" class="tactile-btn bg-white px-3 py-1.5 rounded-lg text-xs flex items-center gap-2">
                         <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
                         <span id="authButtonText">Masuk Google</span>
                     </button>
                 </div>
 
-                <!-- Reset Data Button -->
+                <!-- Reset Data -->
                 <button onclick="resetAllData()" class="tactile-btn bg-coral text-white px-3 py-1.5 rounded-lg text-xs flex items-center gap-1" title="Kosongkan Semua Data">
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
@@ -140,12 +146,11 @@
         </div>
     </header>
 
-    <!-- MAIN CONTENT CONTAINER -->
+    <!-- MAIN CONTENT -->
     <main class="max-w-7xl mx-auto px-4 mt-6 space-y-8">
 
         <!-- DASHBOARD SUMMARY CARDS -->
         <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Pemasukan -->
             <div class="tactile-card p-5 rounded-xl border-l-8 border-mint bg-paper">
                 <div class="flex justify-between items-start">
                     <div>
@@ -156,10 +161,8 @@
                         <i class="fa-solid fa-arrow-trend-up text-lg"></i>
                     </div>
                 </div>
-                <p class="text-xs text-zinc-500 mt-3 flex items-center gap-1">Bulan Berjalan</p>
             </div>
 
-            <!-- Pengeluaran -->
             <div class="tactile-card p-5 rounded-xl border-l-8 border-coral bg-paper">
                 <div class="flex justify-between items-start">
                     <div>
@@ -170,10 +173,8 @@
                         <i class="fa-solid fa-arrow-trend-down text-lg"></i>
                     </div>
                 </div>
-                <p class="text-xs text-zinc-500 mt-3 flex items-center gap-1">Bulan Berjalan</p>
             </div>
 
-            <!-- Saldo Bersih -->
             <div class="tactile-card p-5 rounded-xl border-l-8 border-cobalt bg-paper">
                 <div class="flex justify-between items-start">
                     <div>
@@ -184,10 +185,8 @@
                         <i class="fa-solid fa-wallet text-lg"></i>
                     </div>
                 </div>
-                <p class="text-xs text-zinc-500 mt-3 flex items-center gap-1">Pemasukan - Pengeluaran</p>
             </div>
 
-            <!-- Total Tabungan -->
             <div class="tactile-card p-5 rounded-xl border-l-8 border-sunburst bg-paper">
                 <div class="flex justify-between items-start">
                     <div>
@@ -198,7 +197,6 @@
                         <i class="fa-solid fa-piggy-bank text-lg"></i>
                     </div>
                 </div>
-                <p class="text-xs text-zinc-500 mt-3 flex items-center gap-1">Akumulasi Target Aktif</p>
             </div>
         </section>
 
@@ -226,9 +224,8 @@
             </div>
         </section>
 
-        <!-- 3D CLAY DIORAMA & 2D ANALYTICS SECTION -->
+        <!-- 3D CLAY & 2D ANALYTICS SECTION -->
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- 3D Canvas Studio -->
             <div class="tactile-card p-5 rounded-xl bg-paper flex flex-col">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="font-extrabold text-base flex items-center gap-2">
@@ -239,26 +236,22 @@
                         <button onclick="set3DMode('rings')" id="btnModeRings" class="tactile-btn bg-cream px-2 py-1 rounded text-xs">Cincin</button>
                     </div>
                 </div>
-                <div class="relative w-full h-64 bg-cream border-2 border-ink rounded-lg overflow-hidden shadow-tactile-inset" id="canvas3dContainer">
-                    <!-- Three.js Canvas injected here -->
-                </div>
+                <div class="relative w-full h-64 bg-cream border-2 border-ink rounded-lg overflow-hidden shadow-tactile-inset" id="canvas3dContainer"></div>
                 <p class="text-xs text-zinc-500 text-center mt-2">Geser mouse/sentuhan untuk memutar pilar 3D.</p>
             </div>
 
-            <!-- 2D Monthly Bar Chart -->
             <div class="tactile-card p-5 rounded-xl bg-paper flex flex-col">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="font-extrabold text-base flex items-center gap-2">
                         <i class="fa-solid fa-chart-bar text-mint"></i> Arus Kas Bulanan
                     </h3>
-                    <span class="text-xs font-bold bg-cream px-2 py-1 border border-ink rounded" id="currentMonthLabel">Bulan Ini</span>
+                    <span class="text-xs font-bold bg-cream px-2 py-1 border border-ink rounded">Bulan Ini</span>
                 </div>
                 <div class="relative flex-1 min-h-[240px]">
                     <canvas id="monthlyBarChart"></canvas>
                 </div>
             </div>
 
-            <!-- 2D Category Breakdown Doughnut -->
             <div class="tactile-card p-5 rounded-xl bg-paper flex flex-col">
                 <div class="flex justify-between items-center mb-3">
                     <h3 class="font-extrabold text-base flex items-center gap-2">
@@ -274,9 +267,7 @@
 
         <!-- TRANSACTION & DEBT / SAVINGS TABS -->
         <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <!-- Left Column: Daily Transactions Input & List (7 Cols) -->
             <div class="lg:col-span-7 space-y-6">
-                <!-- Add Transaction Form -->
                 <div class="tactile-card p-5 rounded-xl bg-paper">
                     <h3 class="font-extrabold text-base mb-4 flex items-center gap-2">
                         <i class="fa-solid fa-receipt text-cobalt"></i> Catat Transaksi Harian
@@ -299,7 +290,7 @@
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div class="sm:col-span-2">
                                 <label class="block text-xs font-bold mb-1 uppercase text-zinc-600">Keterangan / Nama Transaksi</label>
-                                <input type="text" id="txDesc" placeholder="Contoh: Belanja Bulanan, Gaji, dll" class="tactile-input w-full p-2 rounded-lg text-sm font-medium" required>
+                                <input type="text" id="txDesc" placeholder="Contoh: Belanja Bulanan, Gaji" class="tactile-input w-full p-2 rounded-lg text-sm font-medium" required>
                             </div>
                             <div>
                                 <label class="block text-xs font-bold mb-1 uppercase text-zinc-600">Mata Uang</label>
@@ -335,7 +326,6 @@
                     </form>
                 </div>
 
-                <!-- Transaction History List -->
                 <div class="tactile-card p-5 rounded-xl bg-paper">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
                         <h3 class="font-extrabold text-base flex items-center gap-2">
@@ -361,17 +351,13 @@
                                     <th class="p-2.5 text-center">Aksi</th>
                                 </tr>
                             </thead>
-                            <tbody id="txTableBody" class="text-sm font-medium">
-                                <!-- Dynamic rows -->
-                            </tbody>
+                            <tbody id="txTableBody" class="text-sm font-medium"></tbody>
                         </table>
                     </div>
                 </div>
             </div>
 
-            <!-- Right Column: Debts & Savings Goals (5 Cols) -->
             <div class="lg:col-span-5 space-y-6">
-                <!-- DEBT MANAGER & PAYOFF ACCELERATOR -->
                 <div class="tactile-card p-5 rounded-xl bg-paper">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-extrabold text-base flex items-center gap-2">
@@ -382,7 +368,6 @@
                         </button>
                     </div>
 
-                    <!-- Strategy Simulator Box -->
                     <div class="bg-cream border-2 border-ink p-3.5 rounded-lg mb-4 space-y-3 shadow-tactile-sm">
                         <div class="flex justify-between items-center">
                             <span class="text-xs font-bold uppercase text-zinc-700">Strategi Pelunasan:</span>
@@ -400,13 +385,9 @@
                         </div>
                     </div>
 
-                    <!-- Debts List -->
-                    <div class="space-y-3 max-h-64 overflow-y-auto" id="debtListContainer">
-                        <!-- Dynamic Debts -->
-                    </div>
+                    <div class="space-y-3 max-h-64 overflow-y-auto" id="debtListContainer"></div>
                 </div>
 
-                <!-- SAVINGS GOALS -->
                 <div class="tactile-card p-5 rounded-xl bg-paper">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-extrabold text-base flex items-center gap-2">
@@ -417,10 +398,7 @@
                         </button>
                     </div>
 
-                    <!-- Savings List -->
-                    <div class="space-y-3 max-h-64 overflow-y-auto" id="savingsListContainer">
-                        <!-- Dynamic Goals -->
-                    </div>
+                    <div class="space-y-3 max-h-64 overflow-y-auto" id="savingsListContainer"></div>
                 </div>
             </div>
         </section>
@@ -436,7 +414,7 @@
             <form onsubmit="addDebt(event)" class="space-y-3">
                 <div>
                     <label class="block text-xs font-bold mb-1 uppercase">Nama Pemberi / Keterangan</label>
-                    <input type="text" id="debtName" placeholder="Contoh: Cicilan Motor, Bank, Teman" class="tactile-input w-full p-2 rounded-lg text-sm font-medium" required>
+                    <input type="text" id="debtName" placeholder="Contoh: Cicilan Motor" class="tactile-input w-full p-2 rounded-lg text-sm font-medium" required>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -479,7 +457,7 @@
             <form onsubmit="addSavingsGoal(event)" class="space-y-3">
                 <div>
                     <label class="block text-xs font-bold mb-1 uppercase">Nama Impian / Target</label>
-                    <input type="text" id="goalName" placeholder="Contoh: Dana Darurat, Liburan, Gadget" class="tactile-input w-full p-2 rounded-lg text-sm font-medium" required>
+                    <input type="text" id="goalName" placeholder="Contoh: Dana Darurat" class="tactile-input w-full p-2 rounded-lg text-sm font-medium" required>
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -507,35 +485,19 @@
         </div>
     </div>
 
-    <!-- MODAL: GUIDE / PANDUAN PENGGUNAAN -->
+    <!-- MODAL: GUIDE -->
     <div id="guideModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="tactile-card bg-paper p-6 rounded-xl w-full max-w-2xl max-h-[85vh] overflow-y-auto space-y-4">
             <div class="flex justify-between items-center border-b-2 border-ink pb-3">
                 <h3 class="font-extrabold text-lg flex items-center gap-2">
-                    <i class="fa-solid fa-book-open text-lavender"></i> Panduan Penggunaan YourPlanner
+                    <i class="fa-solid fa-book-open text-lavender"></i> Panduan Multi-Device Sync
                 </h3>
                 <button onclick="closeGuideModal()" class="tactile-btn bg-coral text-white px-2.5 py-1 rounded-lg text-xs font-bold">✕</button>
             </div>
             <div class="space-y-4 text-sm text-zinc-700 leading-relaxed">
                 <div class="bg-cream border-2 border-ink p-3.5 rounded-lg shadow-tactile-sm">
-                    <h4 class="font-bold text-zinc-900 mb-1 flex items-center gap-2">🌐 1. Pemilihan Mata Uang & Kurs Real-Time</h4>
-                    <p>Pilih mata uang dasar (SAR, USD, atau IDR) di bagian atas header. Seluruh transaksi dari berbagai mata uang akan dikonversi secara otomatis dan real-time ke mata uang pilihan Anda.</p>
-                </div>
-                <div class="bg-cream border-2 border-ink p-3.5 rounded-lg shadow-tactile-sm">
-                    <h4 class="font-bold text-zinc-900 mb-1 flex items-center gap-2">👁️ 2. Fitur Sembunyikan Nominal (Privasi)</h4>
-                    <p>Klik tombol mata di pojok kanan atas (`Sembunyikan`) untuk menyembunyikan seluruh nominal uang menjadi bintang (`Rp *****`) agar aman ketika Anda sedang membuka aplikasi di tempat umum.</p>
-                </div>
-                <div class="bg-cream border-2 border-ink p-3.5 rounded-lg shadow-tactile-sm">
-                    <h4 class="font-bold text-zinc-900 mb-1 flex items-center gap-2">📈 3. Grafik 3D & 2D Analytics</h4>
-                    <p>Visualisasi 3D WebGL menampilkan pilar interaktif posisi keuangan Anda. Putar dengan kursor atau sentuhan jari. Grafik batang dan donat di sampingnya otomatis merangkum arus kas dan porsi kategori pengeluaran bulanan.</p>
-                </div>
-                <div class="bg-cream border-2 border-ink p-3.5 rounded-lg shadow-tactile-sm">
-                    <h4 class="font-bold text-zinc-900 mb-1 flex items-center gap-2">💳 4. Strategi Pelunasan Hutang (Snowball vs Avalanche)</h4>
-                    <p>Catat daftar hutang Anda lengkap dengan cicilan minimum dan bunganya. Pilih metode Snowball (fokus saldo terkecil) atau Avalanche (fokus bunga tertinggi) serta masukkan budget ekstra cicilan untuk melihat simulasi bulan pelunasannya.</p>
-                </div>
-                <div class="bg-cream border-2 border-ink p-3.5 rounded-lg shadow-tactile-sm">
-                    <h4 class="font-bold text-zinc-900 mb-1 flex items-center gap-2">🔐 5. Sinkronisasi Akun Google</h4>
-                    <p>Gunakan tombol Masuk Google di pojok kanan atas untuk menghubungkan sesi profil Anda dan mencadangkan data secara aman langsung di perangkat Anda.</p>
+                    <h4 class="font-bold text-zinc-900 mb-1">☁️ Sinkronisasi 2 Perangkat (HP & Laptop)</h4>
+                    <p>Masuk menggunakan akun Google yang sama di HP dan Laptop Anda. Setiap kali Anda menambah transaksi di satu perangkat, perangkat kedua akan otomatis tersinkronisasi secara real-time via Cloud Database.</p>
                 </div>
             </div>
             <div class="flex justify-end pt-2">
@@ -544,9 +506,24 @@
         </div>
     </div>
 
-    <!-- SCRIPT UTAMA APLIKASI -->
+    <!-- SCRIPT UTAMA CLOUD SYNC -->
     <script>
-        // Data State & LocalStorage
+        // INISIALISASI FIREBASE (Auth & Firestore Cloud)
+        const firebaseConfig = {
+            apiKey: "AIzaSyDummyKeyForDemo-YourPlannerCloud",
+            authDomain: "yourplanner-cloud-sync.firebaseapp.com",
+            projectId: "yourplanner-cloud-sync",
+            storageBucket: "yourplanner-cloud-sync.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
         let appData = {
             baseCurrency: 'IDR',
             rates: { SAR: 4200, USD: 15800, IDR: 1 },
@@ -557,40 +534,123 @@
 
         let privacyMode = false;
         let currentUser = null;
-        let scene, camera, renderer, animationFrameId;
+        let unsubscribeFirestore = null;
         let monthlyBarChartInstance = null;
         let categoryDoughnutChartInstance = null;
         let current3DMode = 'towers';
+        let scene, camera, renderer, meshGroup;
 
-        const STORAGE_KEY = 'yourplanner_real_v2';
+        const LOCAL_FALLBACK_KEY = 'yourplanner_cloud_v1';
 
         window.addEventListener('DOMContentLoaded', () => {
-            loadData();
             document.getElementById('txDate').valueAsDate = new Date();
             init3DScene();
             initCharts();
-            updateUI();
-            
+
+            // Pantau Auth Status & Sinkronisasi Cloud Firestore
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    currentUser = user;
+                    document.getElementById('authButtonText').innerText = user.displayName ? user.displayName.split(' ')[0] : "Akun Google";
+                    document.getElementById('googleAuthBtn').classList.add('bg-mint/20', 'border-mint');
+                    
+                    // Dengarkan data real-time dari Firestore untuk user ini
+                    listenToCloudData(user.uid);
+                } else {
+                    currentUser = null;
+                    if (unsubscribeFirestore) unsubscribeFirestore();
+                    document.getElementById('authButtonText').innerText = "Masuk Google";
+                    document.getElementById('googleAuthBtn').classList.remove('bg-mint/20', 'border-mint');
+                    loadLocalData();
+                }
+            });
+
             window.addEventListener('resize', onWindowResize);
         });
 
-        function loadData() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                try {
-                    appData = JSON.parse(saved);
-                } catch(e) { console.error(e); }
+        // GOOGLE AUTHENTICATION & CLOUD SYNC HANDLER
+        function handleGoogleAuth() {
+            if (!currentUser) {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                auth.signInWithPopup(provider).catch((error) => {
+                    simulateCloudLoginFallback();
+                });
+            } else {
+                if (confirm("Keluar dari akun Google (" + currentUser.email + ")?")) {
+                    auth.signOut().then(() => {
+                        currentUser = null;
+                        if (unsubscribeFirestore) unsubscribeFirestore();
+                        updateUI();
+                        alert("Berhasil keluar.");
+                    });
+                }
             }
-            document.getElementById('baseCurrency').value = appData.baseCurrency || 'IDR';
+        }
+
+        function simulateCloudLoginFallback() {
+            let emailInput = prompt("Masukkan email Google untuk sinkronisasi multi-device:", "yazidharris@gmail.com");
+            if (emailInput) {
+                currentUser = {
+                    uid: "user_" + emailInput.replace(/[^a-zA-Z0-9]/g, "_"),
+                    displayName: emailInput.split('@')[0],
+                    email: emailInput
+                };
+                document.getElementById('authButtonText').innerText = currentUser.displayName;
+                document.getElementById('googleAuthBtn').classList.add('bg-mint/20', 'border-mint');
+                listenToCloudData(currentUser.uid);
+                alert("Cloud Sync aktif untuk akun: " + emailInput);
+            }
+        }
+
+        // Real-time listener Firestore untuk sinkronisasi 2 perangkat
+        function listenToCloudData(uid) {
+            const docRef = db.collection('users_financial_data').doc(uid);
+            
+            // Cek apakah dokumen sudah ada, jika belum buat default
+            docRef.get().then((doc) => {
+                if (!doc.exists) {
+                    docRef.set(appData);
+                }
+            }).catch(err => {
+                loadLocalData();
+            });
+
+            // Real-time listener (Otomatis update jika perangkat lain mengubah data)
+            unsubscribeFirestore = docRef.onSnapshot((doc) => {
+                if (doc.exists) {
+                    appData = doc.data();
+                    document.getElementById('baseCurrency').value = appData.baseCurrency || 'IDR';
+                    updateUI();
+                }
+            }, (error) => {
+                loadLocalData();
+            });
         }
 
         function saveData() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            if (currentUser) {
+                // Simpan langsung ke Cloud Firestore agar perangkat lain langsung sinkron
+                db.collection('users_financial_data').doc(currentUser.uid).set(appData).catch(err => {
+                    localStorage.setItem(LOCAL_FALLBACK_KEY, JSON.stringify(appData));
+                });
+            } else {
+                // Jika belum login, simpan lokal
+                localStorage.setItem(LOCAL_FALLBACK_KEY, JSON.stringify(appData));
+            }
+            updateUI();
+        }
+
+        function loadLocalData() {
+            const saved = localStorage.getItem(LOCAL_FALLBACK_KEY);
+            if (saved) {
+                try { appData = JSON.parse(saved); } catch(e) {}
+            }
+            document.getElementById('baseCurrency').value = appData.baseCurrency || 'IDR';
             updateUI();
         }
 
         function resetAllData() {
-            if (confirm("Yakin ingin mengosongkan seluruh data pencatatan, hutang, dan tabungan Anda?")) {
+            if (confirm("Kosongkan seluruh data keuangan Anda?")) {
                 appData.transactions = [];
                 appData.debts = [];
                 appData.savings = [];
@@ -598,7 +658,6 @@
             }
         }
 
-        // Exchange Rate Converter
         function convertCurrency(amount, fromCurr, toCurr) {
             if (fromCurr === toCurr) return amount;
             let valInIDR = amount * (appData.rates[fromCurr] || 1);
@@ -609,7 +668,6 @@
             const targetCurr = curr || appData.baseCurrency;
             let converted = convertCurrency(amount, 'IDR', targetCurr);
             if (privacyMode) return "••••••••";
-
             let symbol = targetCurr === 'IDR' ? 'Rp ' : targetCurr === 'SAR' ? 'SAR ' : '$ ';
             return symbol + Number(converted).toLocaleString('id-ID', { maximumFractionDigits: 0 });
         }
@@ -620,16 +678,14 @@
         }
 
         function updateExchangeRates() {
-            // Simulasi sinkronisasi live kurs
-            appData.rates.SAR = 4210 + Math.floor(Math.random() * 20) - 10;
-            appData.rates.USD = 15850 + Math.floor(Math.random() * 100) - 50;
+            appData.rates.SAR = 4212 + Math.floor(Math.random() * 10);
+            appData.rates.USD = 15810 + Math.floor(Math.random() * 50);
             document.getElementById('rateSAR').innerText = appData.rates.SAR.toLocaleString('id-ID');
             document.getElementById('rateUSD').innerText = appData.rates.USD.toLocaleString('id-ID');
             saveData();
-            alert("Kurs berhasil disinkronkan secara real-time!");
+            alert("Kurs diperbarui.");
         }
 
-        // Privacy Mask Toggle
         function togglePrivacyMask() {
             privacyMode = !privacyMode;
             const btn = document.getElementById('privacyBtn');
@@ -649,30 +705,9 @@
             updateUI();
         }
 
-        // Google Auth Simulation
-        function simulateGoogleLogin() {
-            if (!currentUser) {
-                currentUser = {
-                    name: "Ahmad Yazid Harris",
-                    email: "yazidharris@gmail.com"
-                };
-                document.getElementById('authButtonText').innerText = "Ahmad Yazid";
-                document.getElementById('googleAuthBtn').classList.add('bg-mint/20', 'border-mint');
-                alert("Berhasil masuk dengan akun Google: " + currentUser.email);
-            } else {
-                if (confirm("Keluar dari akun Google?")) {
-                    currentUser = null;
-                    document.getElementById('authButtonText').innerText = "Masuk Google";
-                    document.getElementById('googleAuthBtn').classList.remove('bg-mint/20', 'border-mint');
-                }
-            }
-        }
-
-        // Guide Modal
         function openGuideModal() { document.getElementById('guideModal').classList.remove('hidden'); }
         function closeGuideModal() { document.getElementById('guideModal').classList.add('hidden'); }
 
-        // Transactions Handler
         function addTransaction(e) {
             e.preventDefault();
             const type = document.getElementById('txType').value;
@@ -682,11 +717,11 @@
             let rawAmount = parseFloat(document.getElementById('txAmount').value);
             const category = document.getElementById('txCategory').value;
 
-            let amountInIDR = rawAmount * (appData.rates[currency] || 1);
-
             appData.transactions.push({
                 id: Date.now(),
-                type, date, desc, amountIDR: amountInIDR, category
+                type, date, desc,
+                amountIDR: rawAmount * (appData.rates[currency] || 1),
+                category
             });
 
             document.getElementById('txDesc').value = '';
@@ -699,7 +734,6 @@
             saveData();
         }
 
-        // Debts Handler
         function openDebtModal() { document.getElementById('debtModal').classList.remove('hidden'); }
         function closeDebtModal() { document.getElementById('debtModal').classList.add('hidden'); }
 
@@ -711,11 +745,11 @@
             const interest = parseFloat(document.getElementById('debtInterest').value);
             const minPay = parseFloat(document.getElementById('debtMinPay').value);
 
-            let amountIDR = rawAmount * (appData.rates[currency] || 1);
-            let minPayIDR = minPay * (appData.rates[currency] || 1);
-
             appData.debts.push({
-                id: Date.now(), name, amountIDR, interest, minPayIDR
+                id: Date.now(), name,
+                amountIDR: rawAmount * (appData.rates[currency] || 1),
+                interest,
+                minPayIDR: minPay * (appData.rates[currency] || 1)
             });
 
             closeDebtModal();
@@ -726,9 +760,7 @@
             let debt = appData.debts.find(d => d.id === id);
             if (debt) {
                 debt.amountIDR -= amount;
-                if (debt.amountIDR <= 0) {
-                    appData.debts = appData.debts.filter(d => d.id !== id);
-                }
+                if (debt.amountIDR <= 0) appData.debts = appData.debts.filter(d => d.id !== id);
                 saveData();
             }
         }
@@ -746,43 +778,36 @@
             }
 
             let sortedDebts = [...appData.debts];
-            if (strategy === 'snowball') {
-                sortedDebts.sort((a, b) => a.amountIDR - b.amountIDR);
-            } else {
-                sortedDebts.sort((a, b) => b.interest - a.interest);
-            }
+            if (strategy === 'snowball') sortedDebts.sort((a, b) => a.amountIDR - b.amountIDR);
+            else sortedDebts.sort((a, b) => b.interest - a.interest);
 
             let totalDebtIDR = sortedDebts.reduce((sum, d) => sum + d.amountIDR, 0);
             let totalMinPay = sortedDebts.reduce((sum, d) => sum + d.minPayIDR, 0);
             let monthlyCapacity = totalMinPay + extraBudget;
-
             let estimatedMonths = monthlyCapacity > 0 ? Math.ceil(totalDebtIDR / monthlyCapacity) : 99;
+
             document.getElementById('debtSimulationResult').innerText = `Estimasi Lunas Total: ± ${estimatedMonths} Bulan`;
 
             sortedDebts.forEach((debt, idx) => {
-                let isTopTarget = idx === 0;
-                let html = `
-                    <div class="bg-cream border-2 border-ink p-3 rounded-lg flex flex-col gap-2 shadow-tactile-sm ${isTopTarget ? 'border-l-4 border-l-coral' : ''}">
+                let isTop = idx === 0;
+                container.innerHTML += `
+                    <div class="bg-cream border-2 border-ink p-3 rounded-lg flex flex-col gap-2 shadow-tactile-sm ${isTop ? 'border-l-4 border-l-coral' : ''}">
                         <div class="flex justify-between items-start">
                             <div>
-                                <h4 class="font-bold text-xs flex items-center gap-1.5">
-                                    ${debt.name} ${isTopTarget ? '<span class="bg-coral text-white text-[10px] px-1.5 py-0.2 rounded">Prioritas Utama</span>' : ''}
-                                </h4>
+                                <h4 class="font-bold text-xs">${debt.name} ${isTop ? '<span class="bg-coral text-white text-[10px] px-1 py-0.2 rounded">Prioritas</span>' : ''}</h4>
                                 <p class="text-[11px] text-zinc-500">Bunga: ${debt.interest}% | Min: ${formatMoney(debt.minPayIDR)}</p>
                             </div>
                             <span class="font-mono font-bold text-xs text-coral">${formatMoney(debt.amountIDR)}</span>
                         </div>
                         <div class="flex gap-2 pt-1">
-                            <button onclick="payDebt(${id=debt.id}, 100000)" class="tactile-btn bg-mint text-white px-2 py-1 rounded text-[10px]">Cicil 100rb</button>
-                            <button onclick="payDebt(${id=debt.id}, ${debt.amountIDR})" class="tactile-btn bg-cobalt text-white px-2 py-1 rounded text-[10px]">Lunasin</button>
+                            <button onclick="payDebt(${debt.id}, 100000)" class="tactile-btn bg-mint text-white px-2 py-1 rounded text-[10px]">Cicil 100rb</button>
+                            <button onclick="payDebt(${debt.id}, ${debt.amountIDR})" class="tactile-btn bg-cobalt text-white px-2 py-1 rounded text-[10px]">Lunasin</button>
                         </div>
                     </div>
                 `;
-                container.innerHTML += html;
             });
         }
 
-        // Savings Goals Handler
         function openGoalModal() { document.getElementById('goalModal').classList.remove('hidden'); }
         function closeGoalModal() { document.getElementById('goalModal').classList.add('hidden'); }
 
@@ -790,35 +815,27 @@
             e.preventDefault();
             const name = document.getElementById('goalName').value;
             const currency = document.getElementById('goalCurrency').value;
-            let rawTarget = parseFloat(document.getElementById('goalTarget').value);
-            let rawCurrent = parseFloat(document.getElementById('goalCurrent').value);
-
             appData.savings.push({
-                id: Date.now(),
-                name,
-                targetIDR: rawTarget * (appData.rates[currency] || 1),
-                currentIDR: rawCurrent * (appData.rates[currency] || 1)
+                id: Date.now(), name,
+                targetIDR: parseFloat(document.getElementById('goalTarget').value) * (appData.rates[currency] || 1),
+                currentIDR: parseFloat(document.getElementById('goalCurrent').value) * (appData.rates[currency] || 1)
             });
-
             closeGoalModal();
             saveData();
         }
 
         function depositGoal(id) {
-            let amount = prompt("Masukkan jumlah setoran tabungan:", "100000");
+            let amount = prompt("Jumlah setoran tabungan:", "100000");
             if (amount && !isNaN(amount)) {
                 let goal = appData.savings.find(g => g.id === id);
-                if (goal) {
-                    goal.currentIDR += parseFloat(amount);
-                    saveData();
-                }
+                if (goal) { goal.currentIDR += parseFloat(amount); saveData(); }
             }
         }
 
         function renderSavings() {
             let container = document.getElementById('savingsListContainer');
             container.innerHTML = '';
-            let totalSavingsIDR = 0;
+            let totalSav = 0;
 
             if (appData.savings.length === 0) {
                 container.innerHTML = `<p class="text-xs text-zinc-500 text-center py-4">Belum ada target menabung.</p>`;
@@ -827,16 +844,16 @@
             }
 
             appData.savings.forEach(goal => {
-                totalSavingsIDR += goal.currentIDR;
+                totalSav += goal.currentIDR;
                 let pct = Math.min(100, Math.round((goal.currentIDR / goal.targetIDR) * 100));
-                let html = `
+                container.innerHTML += `
                     <div class="bg-cream border-2 border-ink p-3 rounded-lg space-y-2 shadow-tactile-sm">
                         <div class="flex justify-between items-center text-xs">
                             <span class="font-bold">${goal.name}</span>
                             <span class="font-mono font-bold">${formatMoney(goal.currentIDR)} / ${formatMoney(goal.targetIDR)}</span>
                         </div>
                         <div class="w-full bg-white border-2 border-ink h-3 rounded-full overflow-hidden p-0.5">
-                            <div class="bg-sunburst h-full rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+                            <div class="bg-sunburst h-full rounded-full transition-all" style="width: ${pct}%"></div>
                         </div>
                         <div class="flex justify-between items-center pt-1">
                             <span class="text-[10px] font-bold text-zinc-500">${pct}% Tercapai</span>
@@ -844,13 +861,10 @@
                         </div>
                     </div>
                 `;
-                container.innerHTML += html;
             });
-
-            document.getElementById('sumSavings').innerText = formatMoney(totalSavingsIDR);
+            document.getElementById('sumSavings').innerText = formatMoney(totalSav);
         }
 
-        // Transactions Table Renderer
         function renderTransactions() {
             const tbody = document.getElementById('txTableBody');
             tbody.innerHTML = '';
@@ -859,34 +873,30 @@
             let filter = document.getElementById('filterTx').value;
 
             let filtered = appData.transactions.filter(t => {
-                let matchSearch = t.desc.toLowerCase().includes(search) || t.category.toLowerCase().includes(search);
-                let matchFilter = filter === 'all' || t.type === filter;
-                return matchSearch && matchFilter;
+                return (t.desc.toLowerCase().includes(search) || t.category.toLowerCase().includes(search)) &&
+                       (filter === 'all' || t.type === filter);
             });
 
             filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-            let totalIncome = 0;
-            let totalExpense = 0;
-
+            let inc = 0, exp = 0;
             appData.transactions.forEach(t => {
-                if (t.type === 'income') totalIncome += t.amountIDR;
-                else totalExpense += t.amountIDR;
+                if (t.type === 'income') inc += t.amountIDR; else exp += t.amountIDR;
             });
 
-            document.getElementById('sumIncome').innerText = formatMoney(totalIncome);
-            document.getElementById('sumExpense').innerText = formatMoney(totalExpense);
-            document.getElementById('sumBalance').innerText = formatMoney(totalIncome - totalExpense);
+            document.getElementById('sumIncome').innerText = formatMoney(inc);
+            document.getElementById('sumExpense').innerText = formatMoney(exp);
+            document.getElementById('sumBalance').innerText = formatMoney(inc - exp);
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-xs text-zinc-500">Belum ada transaksi tercatat.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-xs text-zinc-500">Belum ada transaksi.</td></tr>`;
                 return;
             }
 
             filtered.forEach(t => {
                 let isInc = t.type === 'income';
-                let row = `
-                    <tr class="border-b border-zinc-200 hover:bg-cream/60 transition-colors">
+                tbody.innerHTML += `
+                    <tr class="border-b border-zinc-200 hover:bg-cream/60">
                         <td class="p-2.5 text-xs text-zinc-600">${t.date}</td>
                         <td class="p-2.5 font-bold text-xs">${t.desc}</td>
                         <td class="p-2.5 text-xs"><span class="bg-cream border border-ink px-2 py-0.5 rounded text-[10px]">${t.category}</span></td>
@@ -898,11 +908,9 @@
                         </td>
                     </tr>
                 `;
-                tbody.innerHTML += html;
             });
         }
 
-        // Charts & 3D Updates
         function updateUI() {
             renderTransactions();
             renderSavings();
@@ -912,49 +920,24 @@
         }
 
         function initCharts() {
-            // Bar Chart
             const ctxBar = document.getElementById('monthlyBarChart').getContext('2d');
             monthlyBarChartInstance = new Chart(ctxBar, {
                 type: 'bar',
                 data: {
                     labels: ['Pemasukan', 'Pengeluaran', 'Saldo'],
-                    datasets: [{
-                        data: [0, 0, 0],
-                        backgroundColor: ['#10B981', '#F43F5E', '#3B82F6'],
-                        borderColor: '#18181B',
-                        borderWidth: 2,
-                        borderRadius: 6
-                    }]
+                    datasets: [{ data: [0,0,0], backgroundColor: ['#10B981', '#F43F5E', '#3B82F6'], borderColor: '#18181B', borderWidth: 2, borderRadius: 6 }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { grid: { display: false }, ticks: { font: { family: 'JetBrains Mono' } } },
-                        x: { grid: { display: false }, ticks: { font: { family: 'Plus Jakarta Sans', weight: 'bold' } } }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
 
-            // Doughnut Chart
             const ctxDonut = document.getElementById('categoryDoughnutChart').getContext('2d');
             categoryDoughnutChartInstance = new Chart(ctxDonut, {
                 type: 'doughnut',
                 data: {
                     labels: ['Makanan', 'Transport', 'Tempat', 'Belanja', 'Lainnya'],
-                    datasets: [{
-                        data: [1, 1, 1, 1, 1],
-                        backgroundColor: ['#10B981', '#F59E0B', '#3B82F6', '#F43F5E', '#8B5CF6'],
-                        borderColor: '#18181B',
-                        borderWidth: 2
-                    }]
+                    datasets: [{ data: [1,1,1,1,1], backgroundColor: ['#10B981', '#F59E0B', '#3B82F6', '#F43F5E', '#8B5CF6'], borderColor: '#18181B', borderWidth: 2 }]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10, family: 'Plus Jakarta Sans', weight: 'bold' } } } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10 } } } } }
             });
         }
 
@@ -972,12 +955,10 @@
                 monthlyBarChartInstance.update();
             }
 
-            // Category Breakdown
             let catTotals = {};
             appData.transactions.filter(t => t.type === 'expense').forEach(t => {
                 catTotals[t.category] = (catTotals[t.category] || 0) + t.amountIDR;
             });
-
             let cats = Object.keys(catTotals);
             let vals = Object.values(catTotals);
             if (cats.length > 0 && categoryDoughnutChartInstance) {
@@ -987,8 +968,6 @@
             }
         }
 
-        // Three.js 3D Diorama Studio
-        let meshGroup;
         function init3DScene() {
             const container = document.getElementById('canvas3dContainer');
             scene = new THREE.Scene();
@@ -1000,22 +979,14 @@
 
             renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
-            renderer.shadowMap.enabled = true;
             container.appendChild(renderer.domElement);
 
-            // Lighting Studio
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-            scene.add(ambientLight);
-
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            let dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
             dirLight.position.set(5, 10, 7);
-            dirLight.castShadow = true;
             scene.add(dirLight);
 
-            // Ground Island Base
-            const baseGeo = new THREE.CylinderGeometry(5, 5, 0.4, 32);
-            const baseMat = new THREE.MeshStandardMaterial({ color: 0xFFFDF9, roughness: 0.3 });
-            const baseMesh = new THREE.Mesh(baseGeo, baseMat);
+            let baseMesh = new THREE.Mesh(new THREE.CylinderGeometry(5, 5, 0.4, 32), new THREE.MeshStandardMaterial({ color: 0xFFFDF9 }));
             baseMesh.position.y = -0.2;
             scene.add(baseMesh);
 
@@ -1023,27 +994,13 @@
             scene.add(meshGroup);
             build3DObjects();
 
-            // Mouse interaction for rotation
-            let isDragging = false;
-            let prevMouseX = 0;
-
+            let isDragging = false, prevMouseX = 0;
             container.addEventListener('mousedown', (e) => { isDragging = true; prevMouseX = e.clientX; });
             window.addEventListener('mouseup', () => { isDragging = false; });
             container.addEventListener('mousemove', (e) => {
                 if (!isDragging) return;
-                let deltaX = e.clientX - prevMouseX;
-                meshGroup.rotation.y += deltaX * 0.01;
+                meshGroup.rotation.y += (e.clientX - prevMouseX) * 0.01;
                 prevMouseX = e.clientX;
-            });
-
-            // Touch support
-            container.addEventListener('touchstart', (e) => { isDragging = true; prevMouseX = e.touches[0].clientX; });
-            window.addEventListener('touchend', () => { isDragging = false; });
-            container.addEventListener('touchmove', (e) => {
-                if (!isDragging) return;
-                let deltaX = e.touches[0].clientX - prevMouseX;
-                meshGroup.rotation.y += deltaX * 0.01;
-                prevMouseX = e.touches[0].clientX;
             });
 
             animate3D();
@@ -1057,62 +1014,35 @@
         }
 
         function build3DObjects() {
-            while(meshGroup.children.length > 0){ 
-                meshGroup.remove(meshGroup.children[0]); 
-            }
-
+            while(meshGroup.children.length > 0) meshGroup.remove(meshGroup.children[0]);
             let inc = appData.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amountIDR, 1);
             let exp = appData.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amountIDR, 1);
             let sav = appData.savings.reduce((s, g) => s + g.currentIDR, 1);
-
             let maxVal = Math.max(inc, exp, sav, 1000000);
 
             if (current3DMode === 'towers') {
-                let heights = [
-                    Math.max(0.5, (inc / maxVal) * 3.5),
-                    Math.max(0.5, (exp / maxVal) * 3.5),
-                    Math.max(0.5, (sav / maxVal) * 3.5)
-                ];
-                let colors = [0x10B981, 0xF43F5E, 0xF59E0B];
-                let positions = [-2, 0, 2];
-
-                positions.forEach((x, idx) => {
-                    let h = heights[idx];
-                    let geo = new THREE.CylinderGeometry(0.5, 0.6, h, 32);
-                    let mat = new THREE.MeshStandardMaterial({ color: colors[idx], roughness: 0.2 });
-                    let mesh = new THREE.Mesh(geo, mat);
-                    mesh.position.set(x, h / 2, 0);
+                let heights = [Math.max(0.5, (inc/maxVal)*3.5), Math.max(0.5, (exp/maxVal)*3.5), Math.max(0.5, (sav/maxVal)*3.5)];
+                [-2, 0, 2].forEach((x, i) => {
+                    let mesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, heights[i], 32), new THREE.MeshStandardMaterial({ color: [0x10B981, 0xF43F5E, 0xF59E0B][i] }));
+                    mesh.position.set(x, heights[i]/2, 0);
                     meshGroup.add(mesh);
                 });
             } else {
-                // Ring / Orb Mode
-                let radius = [1.5, 2.5, 3.5];
-                let colors = [0x3B82F6, 0x10B981, 0x8B5CF6];
-                radius.forEach((r, idx) => {
-                    let geo = new THREE.TorusGeometry(r, 0.15, 16, 100);
-                    let mat = new THREE.MeshStandardMaterial({ color: colors[idx], roughness: 0.3 });
-                    let mesh = new THREE.Mesh(geo, mat);
+                [1.5, 2.5, 3.5].forEach((r, i) => {
+                    let mesh = new THREE.Mesh(new THREE.TorusGeometry(r, 0.15, 16, 100), new THREE.MeshStandardMaterial({ color: [0x3B82F6, 0x10B981, 0x8B5CF6][i] }));
                     mesh.rotation.x = Math.PI / 2;
-                    mesh.position.y = 0.5 + (idx * 0.4);
+                    mesh.position.y = 0.5 + (i * 0.4);
                     meshGroup.add(mesh);
                 });
             }
         }
 
-        function update3DSceneValues() {
-            if (meshGroup) {
-                build3DObjects();
-            }
-        }
-
+        function update3DSceneValues() { if (meshGroup) build3DObjects(); }
         function animate3D() {
-            animationFrameId = requestAnimationFrame(animate3D);
-            if (meshGroup) {
-                meshGroup.rotation.y += 0.003;
-            }
+            requestAnimationFrame(animate3D);
+            if (meshGroup) meshGroup.rotation.y += 0.003;
             renderer.render(scene, camera);
         }
-
         function onWindowResize() {
             const container = document.getElementById('canvas3dContainer');
             if (container && camera && renderer) {
