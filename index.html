@@ -1043,6 +1043,59 @@ const db = firebase.firestore();                if (user) {
                 renderer.setSize(container.clientWidth, container.clientHeight);
             }
         }
+        ```html
+<!-- Bagian HTML -->
+<div id="phone-auth-container">
+  <h3>Daftar / Masuk Nomor Telepon</h3>
+  <input type="tel" id="phone-number" placeholder="+628123456789">
+  <button id="send-otp-btn">Kirim Kode Verifikasi</button>
+  
+  <div id="otp-input-area" style="display:none;">
+    <input type="number" id="verification-code" placeholder="Masukkan Kode OTP">
+    <button id="verify-otp-btn">Verifikasi Kode</button>
+  </div>
+  
+  <div id="recaptcha-container"></div>
+</div>
+
+<!-- Bagian JavaScript -->
+<script>
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+    'size': 'invisible',
+    'callback': function(response) {
+      // reCAPTCHA solved, allow sending OTP
+    }
+  });
+
+  document.getElementById('send-otp-btn').addEventListener('click', function() {
+    const phoneNumber = document.getElementById('phone-number').value;
+    const appVerifier = window.recaptchaVerifier;
+
+    firebase.auth().signInWithPhoneNumber(phoneNumber, appVerifier)
+      .then(function(confirmationResult) {
+        window.confirmationResult = confirmationResult;
+        document.getElementById('otp-input-area').style.display = 'block';
+        alert("Kode OTP telah dikirim!");
+      }).catch(function(error) {
+        console.error("Error mengirim OTP:", error);
+        alert("Gagal mengirim OTP. Pastikan nomor benar.");
+      });
+  });
+
+  document.getElementById('verify-otp-btn').addEventListener('click', function() {
+    const code = document.getElementById('verification-code').value;
+
+    window.confirmationResult.confirm(code).then(function(result) {
+      const user = result.user;
+      alert("Login Berhasil!");
+      // Arahkan ke dashboard atau halaman utama Anda
+    }).catch(function(error) {
+      console.error("Error verifikasi OTP:", error);
+      alert("Kode OTP salah atau kedaluwarsa.");
+    });
+  });
+</script>
+```
     </script>
 </body>
 </html>
