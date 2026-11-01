@@ -1043,22 +1043,20 @@ const db = firebase.firestore();                if (user) {
                 renderer.setSize(container.clientWidth, container.clientHeight);
             }
         }
-        ```html
-<!-- Bagian HTML -->
-<div id="phone-auth-container">
+        html
+<div id="phone-auth-container" class="bg-white p-4 rounded-lg shadow-md mt-4">
   <h3>Daftar / Masuk Nomor Telepon</h3>
-  <input type="tel" id="phone-number" placeholder="+628123456789">
-  <button id="send-otp-btn">Kirim Kode Verifikasi</button>
+  <input type="tel" id="phone-number" class="border p-2 w-full mb-2" placeholder="+628123456789">
+  <button id="send-otp-btn" class="bg-cobalt text-white p-2 rounded">Kirim Kode Verifikasi</button>
   
-  <div id="otp-input-area" style="display:none;">
-    <input type="number" id="verification-code" placeholder="Masukkan Kode OTP">
-    <button id="verify-otp-btn">Verifikasi Kode</button>
+  <div id="otp-input-area" style="display:none;" class="mt-4">
+    <input type="number" id="verification-code" class="border p-2 w-full mb-2" placeholder="Masukkan Kode OTP">
+    <button id="verify-otp-btn" class="bg-emerald-500 text-white p-2 rounded">Verifikasi Kode</button>
   </div>
   
-  <div id="recaptcha-container"></div>
+  <div id="recaptcha-container" class="mt-2"></div>
 </div>
 
-<!-- Bagian JavaScript -->
 <script>
   window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
     'size': 'invisible',
@@ -1088,12 +1086,12 @@ const db = firebase.firestore();                if (user) {
     window.confirmationResult.confirm(code).then(function(result) {
       const user = result.user;
       alert("Login Berhasil!");
-      // Arahkan ke dashboard atau halaman utama Anda
     }).catch(function(error) {
       console.error("Error verifikasi OTP:", error);
       alert("Kode OTP salah atau kedaluwarsa.");
     });
   });
+</script>
 </script>
 ```
     </script>
