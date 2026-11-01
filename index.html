@@ -526,13 +526,6 @@ const firebaseConfig = {
   measurementId: "G-3B8VD3VFRD"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
 const firebaseConfig = {
   apiKey: "AIzaSyAP_j57cExSQtEUUf-_6Pc9iVjVF1_uJM4",
   authDomain: "yourplannersyc.firebaseapp.com",
@@ -546,76 +539,9 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-const firebaseConfig = {
-  apiKey: "AIzaSyAP_j57cExSQtEUUf-_6Pc9iVjVF1_uJM4",
-  authDomain: "yourplannersyc.firebaseapp.com",
-  projectId: "yourplannersyc",
-  storageBucket: "yourplannersyc.firebasestorage.app",
-  messagingSenderId: "217320094619",
-  appId: "1:217320094619:web:376c18c42ae6ff79b97f3e",
-  measurementId: "G-3B8VD3VFRD"
-};
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-const firebaseConfig = {
-  apiKey: "AIzaSyAP_j57cExSQtEUUf-_6Pc9iVjVF1_uJM4",
-  authDomain: "yourplannersyc.firebaseapp.com",
-  projectId: "yourplannersyc",
-  storageBucket: "yourplannersyc.firebasestorage.app",
-  messagingSenderId: "217320094619",
-  appId: "1:217320094619:web:376c18c42ae6ff79b97f3e",
-  measurementId: "G-3B8VD3VFRD"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-  apiKey: "AIzaSyAP_j57cExSQtEUUf-_6Pc9iVjVF1_uJM4",
-  authDomain: "yourplannersyc.firebaseapp.com",
-  projectId: "yourplannersyc",
-  storageBucket: "yourplannersyc.firebasestorage.app",
-  messagingSenderId: "217320094619",
-  appId: "1:217320094619:web:376c18c42ae6ff79b97f3e",
-  measurementId: "G-3B8VD3VFRD"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        let appData = {
-            baseCurrency: 'IDR',
-            rates: { SAR: 4200, USD: 15800, IDR: 1 },
-            transactions: [],
-            debts: [],
-            savings: []
-        };
-
-        let privacyMode = false;
-        let currentUser = null;
-        let unsubscribeFirestore = null;
-        let monthlyBarChartInstance = null;
-        let categoryDoughnutChartInstance = null;
-        let current3DMode = 'towers';
-        let scene, camera, renderer, meshGroup;
-
-        const LOCAL_FALLBACK_KEY = 'yourplanner_cloud_v1';
-
-        window.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('txDate').valueAsDate = new Date();
-            init3DScene();
-            initCharts();
-
-            // Pantau Auth Status & Sinkronisasi Cloud Firestore
-            auth.onAuthStateChanged((user) => {
-                if (user) {
+const auth = firebase.auth();
+const db = firebase.firestore();                if (user) {
                     currentUser = user;
                     document.getElementById('authButtonText').innerText = user.displayName ? user.displayName.split(' ')[0] : "Akun Google";
                     document.getElementById('googleAuthBtn').classList.add('bg-mint/20', 'border-mint');
