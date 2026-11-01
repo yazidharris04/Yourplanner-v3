@@ -509,15 +509,27 @@
     <!-- SCRIPT UTAMA CLOUD SYNC -->
     <script>
         // INISIALISASI FIREBASE (Auth & Firestore Cloud)
-        const firebaseConfig = {
-            apiKey: "AIzaSyDummyKeyForDemo-YourPlannerCloud",
-            authDomain: "yourplanner-cloud-sync.firebaseapp.com",
-            projectId: "yourplanner-cloud-sync",
-            storageBucket: "yourplanner-cloud-sync.appspot.com",
-            messagingSenderId: "1234567890",
-            appId: "1:1234567890:web:abcdef"
-        };
-        
+        // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAP_j57cExSQtEUUf-_6Pc9iVjVF1_uJM4",
+  authDomain: "yourplannersyc.firebaseapp.com",
+  projectId: "yourplannersyc",
+  storageBucket: "yourplannersyc.firebasestorage.app",
+  messagingSenderId: "217320094619",
+  appId: "1:217320094619:web:376c18c42ae6ff79b97f3e",
+  measurementId: "G-3B8VD3VFRD"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
