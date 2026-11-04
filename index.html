@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YourPlanner — Cloud Sync</title>
+  <title>YourPlanner</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -19,10 +19,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
   <style>
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
@@ -31,6 +27,7 @@
       background-image: radial-gradient(#d1ccc0 1px, transparent 1px);
       background-size: 24px 24px;
     }
+    .hide { display: none !important; }
     .mono-font { font-family: 'JetBrains Mono', monospace; }
     .card {
       background: #FFFDF9; border: 2px solid #18181B; box-shadow: 4px 4px 0 #18181B;
@@ -58,21 +55,64 @@
       backdrop-filter: blur(4px);
     }
     .modal.open { display: flex; }
-    .logged-in { background: #D1FAE5 !important; }
+    .screen {
+      position: fixed; inset: 0; z-index: 70; display: flex; align-items: center;
+      justify-content: center; padding: 16px; background: #FAF6F0;
+    }
   </style>
 </head>
 
 <body class="min-h-screen pb-16">
 
-<!-- ===== HEADER ===== -->
+<!-- ===== LAYAR LOGIN ===== -->
+<div id="authScreen" class="screen">
+  <div class="card w-full max-w-sm space-y-4">
+    <div class="text-center space-y-2">
+      <div class="w-14 h-14 mx-auto bg-sunburst border-2 border-ink rounded-xl flex items-center justify-center text-2xl">☁️</div>
+      <h1 class="font-extrabold text-xl">YourPlanner</h1>
+      <p id="authSubtitle" class="text-xs text-zinc-600"></p>
+    </div>
+
+    <form id="authForm" onsubmit="submitAuth(event)" class="space-y-3">
+      <div>
+        <label class="label" for="authUser">Username</label>
+        <input id="authUser" class="field" autocomplete="username" maxlength="32" required>
+      </div>
+      <div>
+        <label class="label" for="authPass">Password</label>
+        <input id="authPass" type="password" class="field" required>
+      </div>
+      <div id="authConfirmWrap" class="hide">
+        <label class="label" for="authPass2">Ulangi password</label>
+        <input id="authPass2" type="password" class="field" autocomplete="new-password">
+      </div>
+      <p id="authMsg" class="text-xs font-bold text-coral min-h-[1rem]"></p>
+      <button id="authSubmit" type="submit" class="btn w-full bg-mint text-white py-2.5 text-sm">Masuk</button>
+    </form>
+
+    <div class="flex justify-between items-center text-xs font-bold">
+      <button type="button" onclick="document.getElementById('importFile').click()" class="underline">Impor cadangan</button>
+      <button id="authDelete" type="button" onclick="deleteAccount()" class="underline text-coral hide">Hapus akun di perangkat ini</button>
+      <input type="file" id="importFile" accept="application/json,.json" class="hide" onchange="importBackup(event)">
+    </div>
+
+    <p class="text-[11px] text-zinc-500 leading-relaxed">
+      Data dienkripsi dengan password kamu dan hanya tersimpan di perangkat ini. Kalau password lupa, data tidak bisa dipulihkan, jadi simpan cadangan secara berkala.
+    </p>
+  </div>
+</div>
+
+<!-- ===== APLIKASI (tampil setelah login) ===== -->
+<div id="appRoot" class="hide">
+
 <header class="bg-paper border-b-2 border-ink sticky top-0 z-50 px-4 py-3">
   <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 bg-sunburst border-2 border-ink rounded-lg flex items-center justify-center text-xl">☁️</div>
       <div>
         <h1 class="font-extrabold text-xl flex items-center gap-2">YourPlanner
-          <span class="text-xs bg-cobalt text-white px-2 py-0.5 rounded-full border border-ink">Cloud Sync</span></h1>
-        <p class="text-xs text-zinc-600">Sinkronisasi multi-device · Login Google / Telepon</p>
+          <span class="text-xs bg-cobalt text-white px-2 py-0.5 rounded-full border border-ink">Lokal & Terenkripsi</span></h1>
+        <p class="text-xs text-zinc-600">Data hanya di perangkat ini · Cadangan untuk pindah perangkat</p>
       </div>
     </div>
 
@@ -88,16 +128,16 @@
       <button onclick="togglePrivacyMask()" id="privacyBtn" class="btn bg-sunburst px-3 py-1.5 text-xs flex items-center gap-1.5">
         <i class="fa-solid fa-eye" id="privacyIcon"></i><span id="privacyText">Sembunyikan</span>
       </button>
+      <button onclick="exportBackup()" class="btn bg-white px-3 py-1.5 text-xs flex items-center gap-1.5">
+        <i class="fa-solid fa-download"></i> Cadangan
+      </button>
       <button onclick="openModal('guideModal')" class="btn bg-lavender text-white px-3 py-1.5 text-xs flex items-center gap-1.5">
         <i class="fa-solid fa-book-open"></i> Panduan
       </button>
-      <button onclick="openModal('phoneModal')" class="btn bg-white px-3 py-1.5 text-xs flex items-center gap-1.5">
-        <i class="fa-solid fa-mobile-screen"></i> Telepon
+      <button onclick="logout()" class="btn bg-white px-3 py-1.5 text-xs flex items-center gap-1.5">
+        <i class="fa-solid fa-right-from-bracket"></i> Keluar
       </button>
-      <button onclick="handleGoogleAuth()" id="authBtn" class="btn bg-white px-3 py-1.5 text-xs flex items-center gap-2">
-        <i class="fa-brands fa-google text-cobalt"></i><span id="authButtonText">Masuk Google</span>
-      </button>
-      <button onclick="resetAllData()" class="btn bg-coral text-white px-3 py-1.5 text-xs" title="Kosongkan semua data">
+      <button onclick="resetAllData()" class="btn bg-coral text-white px-3 py-1.5 text-xs" title="Kosongkan data (akun tetap)">
         <i class="fa-solid fa-trash-can"></i>
       </button>
     </div>
@@ -105,9 +145,6 @@
 </header>
 
 <main class="max-w-7xl mx-auto px-4 mt-6 space-y-8">
-
-  <!-- Banner status cloud (muncul hanya jika Firebase gagal dimuat) -->
-  <div id="cloudBanner" class="hidden card border-l-8 border-l-sunburst text-sm font-bold"></div>
 
   <!-- ===== RINGKASAN ===== -->
   <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -256,6 +293,8 @@
   </section>
 </main>
 
+</div>
+
 <!-- ===== MODAL: HUTANG ===== -->
 <div id="debtModal" class="modal">
   <div class="card w-full max-w-md space-y-4">
@@ -299,34 +338,26 @@
   </div>
 </div>
 
-<!-- ===== MODAL: LOGIN TELEPON ===== -->
-<div id="phoneModal" class="modal">
-  <div class="card w-full max-w-sm space-y-3">
-    <div class="flex justify-between items-center">
-      <h3 class="font-extrabold text-lg flex items-center gap-2"><i class="fa-solid fa-mobile-screen text-cobalt"></i> Masuk dengan Telepon</h3>
-      <button onclick="closeModal('phoneModal')" class="btn bg-coral text-white px-2.5 py-1 text-xs">✕</button>
-    </div>
-    <div><label class="label">Nomor telepon (format internasional)</label>
-      <input type="tel" id="phoneNumber" class="field mono-font" placeholder="+628123456789"></div>
-    <button id="sendOtpBtn" onclick="sendOtp()" class="btn w-full bg-cobalt text-white py-2 text-sm">Kirim Kode Verifikasi</button>
-    <div id="otpArea" class="hidden space-y-2">
-      <input type="text" inputmode="numeric" maxlength="6" id="otpCode" class="field mono-font" placeholder="Kode OTP">
-      <button onclick="verifyOtp()" class="btn w-full bg-mint text-white py-2 text-sm">Verifikasi Kode</button>
-    </div>
-    <div id="recaptcha-container"></div>
-  </div>
-</div>
-
 <!-- ===== MODAL: PANDUAN ===== -->
 <div id="guideModal" class="modal">
   <div class="card w-full max-w-lg max-h-[85vh] overflow-y-auto space-y-4">
     <div class="flex justify-between items-center border-b-2 border-ink pb-3">
-      <h3 class="font-extrabold text-lg flex items-center gap-2"><i class="fa-solid fa-book-open text-lavender"></i> Panduan Sinkronisasi</h3>
+      <h3 class="font-extrabold text-lg flex items-center gap-2"><i class="fa-solid fa-book-open text-lavender"></i> Panduan</h3>
       <button onclick="closeModal('guideModal')" class="btn bg-coral text-white px-2.5 py-1 text-xs">✕</button>
     </div>
-    <div class="bg-cream border-2 border-ink p-3.5 rounded-lg text-sm text-zinc-700 leading-relaxed">
-      <h4 class="font-bold text-zinc-900 mb-1">☁️ Sinkron HP &amp; Laptop</h4>
-      <p>Masuk dengan metode yang sama di kedua perangkat (akun Google yang sama, atau nomor telepon yang sama). Setiap perubahan tersinkron otomatis lewat Cloud Firestore.</p>
+    <div class="bg-cream border-2 border-ink p-3.5 rounded-lg text-sm text-zinc-700 leading-relaxed space-y-2">
+      <h4 class="font-bold text-zinc-900">🔐 Login</h4>
+      <p>Buat akun sekali di setiap perangkat dengan username dan password. Password minimal 10 karakter dan harus memuat huruf dan angka. Semakin panjang, semakin aman.</p>
+      <p>Aplikasi otomatis terkunci setelah 15 menit tidak ada aktivitas.</p>
+    </div>
+    <div class="bg-cream border-2 border-ink p-3.5 rounded-lg text-sm text-zinc-700 leading-relaxed space-y-2">
+      <h4 class="font-bold text-zinc-900">📱 Pindah ke perangkat lain</h4>
+      <p>Di perangkat pertama, klik <b>Cadangan</b> untuk menyimpan file <code>.json</code>. Di perangkat kedua, buka halaman login, klik <b>Impor cadangan</b>, lalu masuk dengan username dan password yang sama.</p>
+      <p>Tidak ada sinkron otomatis. Setelah mengubah data di satu perangkat, buat cadangan baru dan impor lagi di perangkat lain.</p>
+    </div>
+    <div class="bg-cream border-2 border-ink p-3.5 rounded-lg text-sm text-zinc-700 leading-relaxed space-y-2">
+      <h4 class="font-bold text-zinc-900">⚠️ Penting</h4>
+      <p>Kalau password lupa, data tidak bisa dipulihkan. Simpan file cadangan di tempat yang aman dan jangan bagikan ke orang lain.</p>
     </div>
     <div class="flex justify-end"><button onclick="closeModal('guideModal')" class="btn bg-cobalt text-white px-5 py-2 text-xs">Mengerti</button></div>
   </div>
@@ -334,44 +365,26 @@
 
 <!-- ===== SCRIPT APLIKASI ===== -->
 <script>
-// ===== FIREBASE (opsional: aplikasi tetap jalan jika cloud gagal dimuat) =====
-const firebaseConfig = {
-  apiKey: "AIzaSyAP_j57cExSQtEUUf-_6Pc9iVjVF1_uJM4",
-  authDomain: "yourplannersyc.firebaseapp.com",
-  projectId: "yourplannersyc",
-  storageBucket: "yourplannersyc.firebasestorage.app",
-  messagingSenderId: "217320094619",
-  appId: "1:217320094619:web:376c18c42ae6ff79b97f3e"
-};
-
-const CLOUD_MSG = "Cloud tidak aktif: library Firebase tidak termuat. Cek koneksi internet, VPN, atau ad blocker (gstatic.com mungkin diblokir).";
-let cloudReady = false;
-let auth = null;
-let db = null;
-try {
-  if (typeof firebase === "undefined") throw new Error("library Firebase tidak termuat");
-  firebase.initializeApp(firebaseConfig);
-  auth = firebase.auth();
-  db = firebase.firestore();
-  cloudReady = true;
-} catch (err) {
-  console.error("Firebase tidak aktif:", err);
-}
-
-// ===== STATE =====
-const LOCAL_KEY = "yourplanner_data_v2";
+// ===== KONFIGURASI =====
+const ACC_KEY = "yp_account_v1";        // akun + data terenkripsi di perangkat ini
+const FAIL_KEY = "yp_fail_v1";          // penghitung percobaan login gagal
+const LEGACY_KEY = "yourplanner_data_v2"; // data plaintext dari versi sebelumnya (dipindah otomatis)
 const RATES_KEY = "yourplanner_rates";
+const PBKDF2_ITER = 600000;
+const IDLE_MS = 15 * 60 * 1000;
 const COLORS = ["#10B981", "#F59E0B", "#3B82F6", "#F43F5E", "#8B5CF6", "#FB923C", "#14B8A6"];
 
+// ===== STATE =====
 let appData = defaultData();
 let rates = { SAR: 4200, USD: 15800 }; // nilai 1 unit dalam IDR
-let currentUser = null;
-let unsubscribeCloud = null;
+let sessionKey = null;                 // kunci AES hanya ada di memori selama login
 let privacyMode = false;
 let current3DMode = "towers";
-let recaptchaVerifier = null;
+let uiReady = false;
 let barChart = null, donutChart = null;
 let scene = null, camera = null, renderer = null, meshGroup = null;
+let writeChain = Promise.resolve();
+let idleTimer = null;
 
 // ===== HELPER =====
 const $ = id => document.getElementById(id);
@@ -408,165 +421,272 @@ function todayISO() {
   return d.toISOString().slice(0, 10);
 }
 
-// ===== MATA UANG =====
-function toIDR(amount, cur) {
-  return cur === "IDR" ? amount : amount * rates[cur];
+// ===== KRIPTOGRAFI (Web Crypto: PBKDF2 + AES-GCM) =====
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+
+function toB64(bytes) {
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s);
 }
 
-function fromIDR(idr, cur) {
-  return cur === "IDR" ? idr : idr / rates[cur];
+function fromB64(str) {
+  return Uint8Array.from(atob(str), c => c.charCodeAt(0));
 }
 
-function symbol(cur) {
-  return cur === "IDR" ? "Rp " : cur === "SAR" ? "SAR " : "$ ";
+async function deriveKey(password, salt) {
+  const base = await crypto.subtle.importKey("raw", enc.encode(password), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "PBKDF2", salt, iterations: PBKDF2_ITER, hash: "SHA-256" },
+    base,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
 }
 
-function fmtIn(value, cur) {
-  if (privacyMode) return "••••••";
-  return symbol(cur) + Math.round(value).toLocaleString("id-ID");
+async function encryptData(key, obj) {
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, enc.encode(JSON.stringify(obj)));
+  return { iv: toB64(iv), data: toB64(new Uint8Array(ct)) };
 }
 
-function fmt(idr) {
-  return fmtIn(fromIDR(idr, appData.baseCurrency), appData.baseCurrency);
+// AES-GCM memverifikasi integritas: password salah = dekripsi gagal
+async function decryptData(key, rec) {
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: fromB64(rec.iv) }, key, fromB64(rec.data));
+  return JSON.parse(dec.decode(pt));
 }
 
-function totals() {
-  const sum = type => appData.transactions
-    .filter(t => t.type === type)
-    .reduce((s, t) => s + t.amountIDR, 0);
-  const inc = sum("income");
-  const exp = sum("expense");
-  const sav = appData.savings.reduce((s, g) => s + g.currentIDR, 0);
-  return { inc, exp, sav };
-}
-
-// ===== PENYIMPANAN (LOKAL + CLOUD) =====
-function saveLocal() {
-  localStorage.setItem(LOCAL_KEY, JSON.stringify(appData));
-}
-
-function loadLocal() {
+// ===== AKUN =====
+function loadAccount() {
   try {
-    const s = localStorage.getItem(LOCAL_KEY);
-    appData = s ? normalize(JSON.parse(s)) : defaultData();
+    const a = JSON.parse(localStorage.getItem(ACC_KEY));
+    return a && a.username && a.salt && a.iv && a.data ? a : null;
   } catch (e) {
-    appData = defaultData();
+    return null;
   }
 }
 
-function save() {
-  saveLocal();
-  if (currentUser && cloudReady) {
-    db.collection("users_financial_data").doc(currentUser.uid).set(appData)
-      .catch(err => alert("Gagal menyimpan ke cloud: " + err.message));
+function readLegacy() {
+  try {
+    const s = localStorage.getItem(LEGACY_KEY);
+    return s ? normalize(JSON.parse(s)) : null;
+  } catch (e) {
+    return null;
   }
+}
+
+function validUsername(u) {
+  return /^[A-Za-z0-9_.]{3,32}$/.test(u);
+}
+
+function passwordProblem(p) {
+  if (p.length < 10) return "Password minimal 10 karakter.";
+  if (!/[A-Za-z]/.test(p) || !/\d/.test(p)) return "Password harus memuat huruf dan angka.";
+  return null;
+}
+
+// Rem sederhana di browser. Keamanan utama tetap dari enkripsi dan password yang kuat.
+function getFail() {
+  try { return JSON.parse(localStorage.getItem(FAIL_KEY)) || { n: 0, until: 0 }; }
+  catch (e) { return { n: 0, until: 0 }; }
+}
+
+function lockRemaining() {
+  return Math.max(0, getFail().until - Date.now());
+}
+
+function registerFail() {
+  const f = getFail();
+  f.n += 1;
+  if (f.n % 5 === 0) f.until = Date.now() + 30000 * (f.n / 5);
+  localStorage.setItem(FAIL_KEY, JSON.stringify(f));
+}
+
+function clearFail() {
+  localStorage.removeItem(FAIL_KEY);
+}
+
+async function createAccount(username, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await deriveKey(password, salt);
+  const data = readLegacy() || defaultData();
+  const rec = await encryptData(key, data);
+  localStorage.setItem(ACC_KEY, JSON.stringify({
+    v: 1, username, salt: toB64(salt), iv: rec.iv, data: rec.data
+  }));
+  localStorage.removeItem(LEGACY_KEY);
+  sessionKey = key;
+  appData = data;
+}
+
+async function login(username, password) {
+  const acc = loadAccount();
+  if (!acc || acc.username.toLowerCase() !== username.toLowerCase()) throw new Error("BAD_LOGIN");
+  const key = await deriveKey(password, fromB64(acc.salt));
+  let data;
+  try {
+    data = normalize(await decryptData(key, acc));
+  } catch (e) {
+    throw new Error("BAD_LOGIN");
+  }
+  sessionKey = key;
+  appData = data;
+}
+
+// ===== PENYIMPANAN =====
+async function persistSnapshot(key, snap) {
+  if (!key) return;
+  const acc = loadAccount();
+  if (!acc) return;
+  const rec = await encryptData(key, snap);
+  localStorage.setItem(ACC_KEY, JSON.stringify({ ...acc, iv: rec.iv, data: rec.data }));
+}
+
+// Setiap simpan dienkripsi ulang dengan IV baru. Penulisan dibuat berurutan.
+function save() {
+  const key = sessionKey;
+  const snap = JSON.parse(JSON.stringify(appData));
+  writeChain = writeChain
+    .then(() => persistSnapshot(key, snap))
+    .catch(err => alert("Gagal menyimpan data: " + err.message));
   renderAll();
 }
 
-function startCloud(uid) {
-  stopCloud();
-  const ref = db.collection("users_financial_data").doc(uid);
-  unsubscribeCloud = ref.onSnapshot(snap => {
-    if (snap.exists) {
-      appData = normalize(snap.data());
-      saveLocal();
-    } else {
-      // Dokumen belum ada: buat dari data yang sekarang dipakai
-      ref.set(appData).catch(err => alert("Gagal membuat data cloud: " + err.message));
-    }
-    renderAll();
-  }, err => alert("Sinkronisasi cloud gagal: " + err.message));
+// ===== BUKA / KUNCI =====
+function unlock() {
+  $("authScreen").classList.add("hide");
+  $("appRoot").classList.remove("hide");
+  $("authPass").value = "";
+  $("authPass2").value = "";
+  initUI();
+  $("txDate").value = todayISO();
+  renderAll();
+  resetIdle();
 }
 
-function stopCloud() {
-  if (unsubscribeCloud) {
-    unsubscribeCloud();
-    unsubscribeCloud = null;
-  }
+function lockApp(message) {
+  sessionKey = null;
+  appData = defaultData();
+  clearTimeout(idleTimer);
+  $("appRoot").classList.add("hide");
+  $("authScreen").classList.remove("hide");
+  renderAuthScreen();
+  if (message) setAuthMsg(message);
 }
 
-// ===== LOGIN =====
-function handleGoogleAuth() {
-  if (!cloudReady) return alert(CLOUD_MSG);
-  if (currentUser) {
-    const who = currentUser.email || currentUser.phoneNumber || "akun ini";
-    if (confirm("Keluar dari " + who + "?")) auth.signOut();
+function logout() {
+  if (confirm("Keluar dari akun ini?")) lockApp();
+}
+
+function resetIdle() {
+  if (!sessionKey) return;
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(() => lockApp("Terkunci otomatis karena tidak ada aktivitas."), IDLE_MS);
+}
+["pointerdown", "keydown", "touchstart"].forEach(ev =>
+  document.addEventListener(ev, resetIdle, { passive: true }));
+
+// ===== LAYAR LOGIN =====
+function setAuthMsg(text) {
+  $("authMsg").textContent = text;
+}
+
+function renderAuthScreen() {
+  const acc = loadAccount();
+  const signup = !acc;
+  $("authSubtitle").textContent = signup
+    ? "Buat akun untuk aplikasi ini (hanya tersimpan di perangkat ini)"
+    : "Masuk untuk melanjutkan";
+  $("authConfirmWrap").classList.toggle("hide", !signup);
+  $("authSubmit").textContent = signup ? "Buat Akun" : "Masuk";
+  $("authUser").value = acc ? acc.username : "";
+  $("authPass").value = "";
+  $("authPass2").value = "";
+  $("authPass").setAttribute("autocomplete", signup ? "new-password" : "current-password");
+  $("authDelete").classList.toggle("hide", signup);
+  setAuthMsg("");
+}
+
+async function submitAuth(e) {
+  e.preventDefault();
+  const username = $("authUser").value.trim();
+  const password = $("authPass").value;
+  const acc = loadAccount();
+
+  const wait = lockRemaining();
+  if (wait > 0) {
+    setAuthMsg(`Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil(wait / 1000)} detik.`);
     return;
   }
-  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(err => {
-    if (err.code === "auth/popup-closed-by-user" || err.code === "auth/cancelled-popup-request") return;
-    alert("Login Google gagal: " + err.message);
-  });
-}
 
-function sendOtp() {
-  if (!cloudReady) return alert(CLOUD_MSG);
-  const phone = $("phoneNumber").value.trim();
-  if (!/^\+\d{8,15}$/.test(phone)) {
-    alert("Gunakan format internasional, contoh +628123456789");
-    return;
-  }
-  const btn = $("sendOtpBtn");
+  const btn = $("authSubmit");
   btn.disabled = true;
   try {
-    if (!recaptchaVerifier) {
-      recaptchaVerifier = new firebase.auth.RecaptchaVerifier("recaptcha-container", { size: "invisible" });
+    if (!acc) {
+      if (!validUsername(username)) throw new Error("Username 3–32 karakter: huruf, angka, titik, atau garis bawah.");
+      const problem = passwordProblem(password);
+      if (problem) throw new Error(problem);
+      if (password !== $("authPass2").value) throw new Error("Ulangi password tidak sama.");
+      await createAccount(username, password);
+      clearFail();
+    } else {
+      await login(username, password);
+      clearFail();
     }
-    auth.signInWithPhoneNumber(phone, recaptchaVerifier)
-      .then(result => {
-        window.confirmationResult = result;
-        $("otpArea").classList.remove("hidden");
-        alert("Kode OTP sudah dikirim.");
-      })
-      .catch(err => {
-        resetRecaptcha();
-        alert("Gagal mengirim OTP: " + err.message);
-      })
-      .finally(() => { btn.disabled = false; });
+    unlock();
   } catch (err) {
+    if (err.message === "BAD_LOGIN") {
+      registerFail();
+      setAuthMsg("Username atau password salah.");
+    } else {
+      setAuthMsg(err.message);
+    }
+  } finally {
     btn.disabled = false;
-    alert("reCAPTCHA gagal dimuat: " + err.message);
   }
 }
 
-function resetRecaptcha() {
-  try { if (recaptchaVerifier) recaptchaVerifier.clear(); } catch (e) {}
-  recaptchaVerifier = null;
-  $("recaptcha-container").innerHTML = "";
+function deleteAccount() {
+  if (!confirm("Hapus akun di perangkat ini? Semua data di perangkat ini akan hilang. Pastikan kamu sudah punya file cadangan.")) return;
+  localStorage.removeItem(ACC_KEY);
+  clearFail();
+  renderAuthScreen();
 }
 
-function verifyOtp() {
-  const code = $("otpCode").value.trim();
-  if (!window.confirmationResult) {
-    alert("Kirim kode OTP dulu.");
-    return;
+// ===== CADANGAN (file terenkripsi, untuk pindah perangkat) =====
+function exportBackup() {
+  const acc = loadAccount();
+  if (!acc) return alert("Belum ada akun di perangkat ini.");
+  const blob = new Blob([JSON.stringify(acc)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `yourplanner-cadangan-${todayISO()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function importBackup(e) {
+  const file = e.target.files[0];
+  e.target.value = "";
+  if (!file) return;
+  try {
+    const rec = JSON.parse(await file.text());
+    if (!rec.username || !rec.salt || !rec.iv || !rec.data) throw new Error("File cadangan tidak valid.");
+    if (loadAccount() && !confirm("Ganti akun di perangkat ini dengan isi file cadangan? Data akun yang ada di perangkat ini akan hilang.")) return;
+    localStorage.setItem(ACC_KEY, JSON.stringify({
+      v: 1, username: rec.username, salt: rec.salt, iv: rec.iv, data: rec.data
+    }));
+    clearFail();
+    renderAuthScreen();
+    setAuthMsg("Cadangan dimuat. Masukkan password akun ini.");
+  } catch (err) {
+    alert("Gagal impor: " + err.message);
   }
-  window.confirmationResult.confirm(code)
-    .then(() => {
-      $("otpCode").value = "";
-      $("otpArea").classList.add("hidden");
-      closeModal("phoneModal");
-    })
-    .catch(err => alert("Kode salah atau kedaluwarsa: " + err.message));
-}
-
-function onAuth(user) {
-  currentUser = user;
-  stopCloud();
-  if (user) {
-    startCloud(user.uid);
-  } else {
-    loadLocal();
-    renderAll();
-  }
-  updateAuthUI();
-}
-
-function updateAuthUI() {
-  $("authButtonText").textContent = currentUser
-    ? (currentUser.displayName || currentUser.email || currentUser.phoneNumber || "Akun aktif")
-    : "Masuk Google";
-  $("authBtn").classList.toggle("logged-in", !!currentUser);
 }
 
 // ===== MODAL =====
@@ -625,6 +745,38 @@ async function fetchRates(manual = false) {
 function renderRates() {
   $("rateSAR").textContent = Math.round(rates.SAR).toLocaleString("id-ID");
   $("rateUSD").textContent = Math.round(rates.USD).toLocaleString("id-ID");
+}
+
+// ===== MATA UANG =====
+function toIDR(amount, cur) {
+  return cur === "IDR" ? amount : amount * rates[cur];
+}
+
+function fromIDR(idr, cur) {
+  return cur === "IDR" ? idr : idr / rates[cur];
+}
+
+function symbol(cur) {
+  return cur === "IDR" ? "Rp " : cur === "SAR" ? "SAR " : "$ ";
+}
+
+function fmtIn(value, cur) {
+  if (privacyMode) return "••••••";
+  return symbol(cur) + Math.round(value).toLocaleString("id-ID");
+}
+
+function fmt(idr) {
+  return fmtIn(fromIDR(idr, appData.baseCurrency), appData.baseCurrency);
+}
+
+function totals() {
+  const sum = type => appData.transactions
+    .filter(t => t.type === type)
+    .reduce((s, t) => s + t.amountIDR, 0);
+  const inc = sum("income");
+  const exp = sum("expense");
+  const sav = appData.savings.reduce((s, g) => s + g.currentIDR, 0);
+  return { inc, exp, sav };
 }
 
 // ===== TRANSAKSI =====
@@ -985,6 +1137,7 @@ function init3D() {
     box.addEventListener(ev, () => { dragging = false; }));
 
   new ResizeObserver(() => {
+    if (!camera || !renderer) return;
     camera.aspect = box.clientWidth / box.clientHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(box.clientWidth, box.clientHeight);
@@ -1051,6 +1204,13 @@ function renderAll() {
   render3D();
 }
 
+function initUI() {
+  if (uiReady) return;
+  uiReady = true;
+  safe("Grafik", initCharts);
+  safe("Diorama 3D", init3D);
+}
+
 // ===== START =====
 function main() {
   document.querySelectorAll(".modal").forEach(m =>
@@ -1059,25 +1219,14 @@ function main() {
     if (e.key === "Escape") document.querySelectorAll(".modal.open").forEach(m => closeModal(m.id));
   });
 
-  // Setiap bagian dibungkus safe() supaya satu library yang gagal tidak mematikan sisanya
-  safe("Grafik", initCharts);
-  safe("Diorama 3D", init3D);
-  safe("Ringkasan", () => {
-    loadCachedRates();
-    loadLocal();
-    $("txDate").value = todayISO();
-    renderAll();
-  });
-  updateAuthUI();
-  fetchRates();
-
-  if (cloudReady) {
-    auth.onAuthStateChanged(onAuth);
-  } else {
-    const banner = $("cloudBanner");
-    banner.textContent = CLOUD_MSG + " Data tetap tersimpan di perangkat ini.";
-    banner.classList.remove("hidden");
+  renderAuthScreen();
+  if (!window.crypto || !crypto.subtle) {
+    $("authSubmit").disabled = true;
+    setAuthMsg("Browser ini tidak mendukung enkripsi. Buka aplikasi lewat https (link Vercel), bukan file langsung.");
   }
+
+  loadCachedRates();
+  fetchRates();
 }
 
 main();
