@@ -1,4 +1,340 @@
-// ===== FIREBASE =====
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YourPlanner — Cloud Sync</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: {
+      cream: '#FAF6F0', paper: '#FFFDF9', ink: '#18181B', mint: '#10B981', coral: '#F43F5E',
+      sunburst: '#F59E0B', cobalt: '#3B82F6', lavender: '#8B5CF6', tangerine: '#FB923C'
+    } } } };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #FAF6F0;
+      color: #18181B;
+      background-image: radial-gradient(#d1ccc0 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    .mono-font { font-family: 'JetBrains Mono', monospace; }
+    .card {
+      background: #FFFDF9; border: 2px solid #18181B; box-shadow: 4px 4px 0 #18181B;
+      border-radius: 12px; padding: 20px;
+    }
+    .btn {
+      border: 2px solid #18181B; box-shadow: 3px 3px 0 #18181B; border-radius: 8px;
+      font-weight: 700; transition: all .1s; cursor: pointer;
+    }
+    .btn:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 #18181B; }
+    .btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #18181B; }
+    .btn:disabled { opacity: .6; pointer-events: none; }
+    .field {
+      width: 100%; padding: 8px 10px; border: 2px solid #18181B; border-radius: 8px;
+      background: #FFFDF9; font-size: 14px; box-shadow: inset 2px 2px 0 rgba(0,0,0,.05);
+    }
+    .field:focus { outline: none; box-shadow: 3px 3px 0 #3B82F6; }
+    .label {
+      display: block; margin-bottom: 4px; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; color: #52525B;
+    }
+    .modal {
+      position: fixed; inset: 0; z-index: 60; display: none; align-items: center;
+      justify-content: center; padding: 16px; background: rgba(0,0,0,.5);
+      backdrop-filter: blur(4px);
+    }
+    .modal.open { display: flex; }
+    .logged-in { background: #D1FAE5 !important; }
+  </style>
+</head>
+
+<body class="min-h-screen pb-16">
+
+<!-- ===== HEADER ===== -->
+<header class="bg-paper border-b-2 border-ink sticky top-0 z-50 px-4 py-3">
+  <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 bg-sunburst border-2 border-ink rounded-lg flex items-center justify-center text-xl">☁️</div>
+      <div>
+        <h1 class="font-extrabold text-xl flex items-center gap-2">YourPlanner
+          <span class="text-xs bg-cobalt text-white px-2 py-0.5 rounded-full border border-ink">Cloud Sync</span></h1>
+        <p class="text-xs text-zinc-600">Sinkronisasi multi-device · Login Google / Telepon</p>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center justify-center gap-2">
+      <div class="flex items-center bg-cream border-2 border-ink rounded-lg px-2 py-1">
+        <i class="fa-solid fa-coins text-zinc-500 mr-1.5 text-xs"></i>
+        <select id="baseCurrency" onchange="changeBaseCurrency()" class="bg-transparent font-bold text-sm focus:outline-none cursor-pointer">
+          <option value="IDR">IDR (Rp)</option>
+          <option value="SAR">SAR (ر.س)</option>
+          <option value="USD">USD ($)</option>
+        </select>
+      </div>
+      <button onclick="togglePrivacyMask()" id="privacyBtn" class="btn bg-sunburst px-3 py-1.5 text-xs flex items-center gap-1.5">
+        <i class="fa-solid fa-eye" id="privacyIcon"></i><span id="privacyText">Sembunyikan</span>
+      </button>
+      <button onclick="openModal('guideModal')" class="btn bg-lavender text-white px-3 py-1.5 text-xs flex items-center gap-1.5">
+        <i class="fa-solid fa-book-open"></i> Panduan
+      </button>
+      <button onclick="openModal('phoneModal')" class="btn bg-white px-3 py-1.5 text-xs flex items-center gap-1.5">
+        <i class="fa-solid fa-mobile-screen"></i> Telepon
+      </button>
+      <button onclick="handleGoogleAuth()" id="authBtn" class="btn bg-white px-3 py-1.5 text-xs flex items-center gap-2">
+        <i class="fa-brands fa-google text-cobalt"></i><span id="authButtonText">Masuk Google</span>
+      </button>
+      <button onclick="resetAllData()" class="btn bg-coral text-white px-3 py-1.5 text-xs" title="Kosongkan semua data">
+        <i class="fa-solid fa-trash-can"></i>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 mt-6 space-y-8">
+
+  <!-- Banner status cloud (muncul hanya jika Firebase gagal dimuat) -->
+  <div id="cloudBanner" class="hidden card border-l-8 border-l-sunburst text-sm font-bold"></div>
+
+  <!-- ===== RINGKASAN ===== -->
+  <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="card border-l-8 border-l-mint flex justify-between items-start">
+      <div><p class="text-xs font-bold text-zinc-500 uppercase tracking-wider">Total Pemasukan</p>
+        <h2 id="sumIncome" class="text-2xl font-black mt-1 mono-font text-mint">0</h2></div>
+      <div class="w-10 h-10 rounded-lg bg-mint/20 border-2 border-ink flex items-center justify-center text-mint"><i class="fa-solid fa-arrow-trend-up"></i></div>
+    </div>
+    <div class="card border-l-8 border-l-coral flex justify-between items-start">
+      <div><p class="text-xs font-bold text-zinc-500 uppercase tracking-wider">Total Pengeluaran</p>
+        <h2 id="sumExpense" class="text-2xl font-black mt-1 mono-font text-coral">0</h2></div>
+      <div class="w-10 h-10 rounded-lg bg-coral/20 border-2 border-ink flex items-center justify-center text-coral"><i class="fa-solid fa-arrow-trend-down"></i></div>
+    </div>
+    <div class="card border-l-8 border-l-cobalt flex justify-between items-start">
+      <div><p class="text-xs font-bold text-zinc-500 uppercase tracking-wider">Saldo / Surplus</p>
+        <h2 id="sumBalance" class="text-2xl font-black mt-1 mono-font text-cobalt">0</h2></div>
+      <div class="w-10 h-10 rounded-lg bg-cobalt/20 border-2 border-ink flex items-center justify-center text-cobalt"><i class="fa-solid fa-wallet"></i></div>
+    </div>
+    <div class="card border-l-8 border-l-sunburst flex justify-between items-start">
+      <div><p class="text-xs font-bold text-zinc-500 uppercase tracking-wider">Total Tabungan</p>
+        <h2 id="sumSavings" class="text-2xl font-black mt-1 mono-font text-sunburst">0</h2></div>
+      <div class="w-10 h-10 rounded-lg bg-sunburst/20 border-2 border-ink flex items-center justify-center text-sunburst"><i class="fa-solid fa-piggy-bank"></i></div>
+    </div>
+  </section>
+
+  <!-- ===== KURS ===== -->
+  <section class="card flex flex-col md:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded bg-tangerine text-white border-2 border-ink flex items-center justify-center"><i class="fa-solid fa-globe"></i></div>
+      <div><h3 class="font-bold text-sm">Kurs Terkini</h3><p class="text-xs text-zinc-500">Konversi otomatis SAR, USD, dan IDR.</p></div>
+    </div>
+    <div class="flex flex-wrap items-center gap-3 mono-font text-xs font-bold">
+      <div class="bg-cream border-2 border-ink px-3 py-1.5 rounded-lg">1 SAR = <span id="rateSAR" class="text-cobalt">-</span> IDR</div>
+      <div class="bg-cream border-2 border-ink px-3 py-1.5 rounded-lg">1 USD = <span id="rateUSD" class="text-mint">-</span> IDR</div>
+      <button onclick="fetchRates(true)" class="btn bg-sunburst px-3 py-1.5 text-xs"><i class="fa-solid fa-rotate"></i> Refresh Kurs</button>
+    </div>
+  </section>
+
+  <!-- ===== 3D + GRAFIK ===== -->
+  <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="card flex flex-col">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-extrabold flex items-center gap-2"><i class="fa-solid fa-cube text-cobalt"></i> Diorama 3D</h3>
+        <div class="flex gap-1">
+          <button id="btnModeTowers" onclick="set3DMode('towers')" class="btn px-2 py-1 text-xs bg-cobalt text-white">Menara</button>
+          <button id="btnModeRings" onclick="set3DMode('rings')" class="btn px-2 py-1 text-xs bg-cream">Cincin</button>
+        </div>
+      </div>
+      <div id="canvas3dContainer" class="w-full h-64 bg-cream border-2 border-ink rounded-lg overflow-hidden" style="touch-action:pan-y"></div>
+      <p class="text-xs text-zinc-500 text-center mt-2">Geser untuk memutar pilar 3D.</p>
+    </div>
+    <div class="card flex flex-col">
+      <h3 class="font-extrabold mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-bar text-mint"></i> Arus Kas</h3>
+      <div class="relative flex-1 min-h-[240px]"><canvas id="monthlyBarChart"></canvas></div>
+    </div>
+    <div class="card flex flex-col">
+      <h3 class="font-extrabold mb-3 flex items-center gap-2"><i class="fa-solid fa-chart-pie text-coral"></i> Porsi Pengeluaran</h3>
+      <div class="relative flex-1 min-h-[240px]"><canvas id="categoryDoughnutChart"></canvas></div>
+    </div>
+  </section>
+
+  <!-- ===== TRANSAKSI + HUTANG + TABUNGAN ===== -->
+  <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <div class="lg:col-span-7 space-y-6">
+      <div class="card">
+        <h3 class="font-extrabold mb-4 flex items-center gap-2"><i class="fa-solid fa-receipt text-cobalt"></i> Catat Transaksi</h3>
+        <form onsubmit="addTransaction(event)" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><label class="label">Jenis</label>
+              <select id="txType" class="field font-bold"><option value="income">➕ Pemasukan</option><option value="expense" selected>➖ Pengeluaran</option></select></div>
+            <div><label class="label">Tanggal</label><input type="date" id="txDate" class="field font-bold" required></div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="sm:col-span-2"><label class="label">Keterangan</label><input type="text" id="txDesc" class="field" placeholder="Contoh: Belanja bulanan, Gaji" required></div>
+            <div><label class="label">Mata Uang</label>
+              <select id="txCurrency" class="field font-bold"><option value="IDR">IDR (Rp)</option><option value="SAR">SAR (ر.س)</option><option value="USD">USD ($)</option></select></div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div><label class="label">Nominal</label><input type="number" step="any" min="0" id="txAmount" class="field mono-font font-bold" placeholder="0" required></div>
+            <div><label class="label">Kategori</label>
+              <select id="txCategory" class="field font-bold">
+                <option value="Makanan &amp; Minuman">🍔 Makanan &amp; Minuman</option>
+                <option value="Transportasi">🚗 Transportasi</option>
+                <option value="Tempat Tinggal">🏠 Tempat Tinggal</option>
+                <option value="Belanja">🛍️ Belanja</option>
+                <option value="Gaji &amp; Pendapatan">💰 Gaji &amp; Pendapatan</option>
+                <option value="Lainnya">📦 Lainnya</option>
+              </select></div>
+          </div>
+          <button type="submit" class="btn w-full bg-mint text-white py-3 flex items-center justify-center gap-2"><i class="fa-solid fa-plus-circle"></i> Simpan Transaksi</button>
+        </form>
+      </div>
+
+      <div class="card">
+        <div class="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-4">
+          <h3 class="font-extrabold flex items-center gap-2"><i class="fa-solid fa-list-ul text-sunburst"></i> Riwayat Transaksi</h3>
+          <div class="flex items-center gap-2">
+            <input type="text" id="searchTx" oninput="renderTransactions()" class="field text-xs" style="width:11rem" placeholder="Cari transaksi...">
+            <select id="filterTx" onchange="renderTransactions()" class="field text-xs font-bold" style="width:auto">
+              <option value="all">Semua</option><option value="income">Masuk</option><option value="expense">Keluar</option>
+            </select>
+          </div>
+        </div>
+        <div class="overflow-x-auto max-h-96 overflow-y-auto">
+          <table class="w-full text-left border-collapse">
+            <thead><tr class="border-b-2 border-ink text-xs bg-cream">
+              <th class="p-2.5">Tanggal</th><th class="p-2.5">Keterangan</th><th class="p-2.5">Kategori</th>
+              <th class="p-2.5 text-right">Nominal</th><th class="p-2.5 text-center">Aksi</th>
+            </tr></thead>
+            <tbody id="txTableBody" class="text-sm font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="lg:col-span-5 space-y-6">
+      <div class="card">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-extrabold flex items-center gap-2"><i class="fa-solid fa-credit-card text-coral"></i> Manajemen Hutang</h3>
+          <button onclick="openModal('debtModal')" class="btn bg-coral text-white px-3 py-1 text-xs"><i class="fa-solid fa-plus"></i> Tambah</button>
+        </div>
+        <div class="bg-cream border-2 border-ink p-3.5 rounded-lg mb-4 space-y-3">
+          <div class="flex justify-between items-center gap-2">
+            <span class="text-xs font-bold uppercase text-zinc-700">Strategi:</span>
+            <select id="debtStrategy" onchange="renderDebts()" class="field text-xs font-bold" style="width:auto">
+              <option value="snowball">Snowball (terkecil dulu)</option>
+              <option value="avalanche">Avalanche (bunga tertinggi)</option>
+            </select>
+          </div>
+          <div><label class="label">Budget ekstra cicilan / bulan (IDR)</label>
+            <input type="number" id="extraDebtBudget" oninput="renderDebts()" value="500000" min="0" class="field mono-font font-bold text-xs"></div>
+          <div id="debtSimulationResult" class="text-xs font-bold text-cobalt bg-white border border-ink p-2 rounded">Estimasi lunas: -</div>
+        </div>
+        <div id="debtListContainer" class="space-y-3 max-h-64 overflow-y-auto"></div>
+      </div>
+
+      <div class="card">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-extrabold flex items-center gap-2"><i class="fa-solid fa-bullseye text-sunburst"></i> Target Menabung</h3>
+          <button onclick="openModal('goalModal')" class="btn bg-sunburst px-3 py-1 text-xs"><i class="fa-solid fa-plus"></i> Baru</button>
+        </div>
+        <div id="savingsListContainer" class="space-y-3 max-h-64 overflow-y-auto"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ===== MODAL: HUTANG ===== -->
+<div id="debtModal" class="modal">
+  <div class="card w-full max-w-md space-y-4">
+    <h3 class="font-extrabold text-lg flex items-center gap-2"><i class="fa-solid fa-credit-card text-coral"></i> Tambah Hutang</h3>
+    <form onsubmit="addDebt(event)" class="space-y-3">
+      <div><label class="label">Nama / Keterangan</label><input type="text" id="debtName" class="field" placeholder="Contoh: Cicilan motor" required></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="label">Sisa pokok</label><input type="number" step="any" min="0" id="debtAmount" class="field mono-font font-bold" required></div>
+        <div><label class="label">Mata uang</label>
+          <select id="debtCurrency" class="field font-bold"><option value="IDR">IDR</option><option value="SAR">SAR</option><option value="USD">USD</option></select></div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="label">Bunga / tahun (%)</label><input type="number" step="any" min="0" id="debtInterest" value="0" class="field mono-font font-bold" required></div>
+        <div><label class="label">Cicilan min. / bulan</label><input type="number" step="any" min="0" id="debtMinPay" class="field mono-font font-bold" required></div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeModal('debtModal')" class="btn bg-zinc-200 px-4 py-2 text-xs">Batal</button>
+        <button type="submit" class="btn bg-coral text-white px-4 py-2 text-xs">Simpan Hutang</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL: TARGET MENABUNG ===== -->
+<div id="goalModal" class="modal">
+  <div class="card w-full max-w-md space-y-4">
+    <h3 class="font-extrabold text-lg flex items-center gap-2"><i class="fa-solid fa-bullseye text-sunburst"></i> Tambah Target Menabung</h3>
+    <form onsubmit="addSavingsGoal(event)" class="space-y-3">
+      <div><label class="label">Nama target</label><input type="text" id="goalName" class="field" placeholder="Contoh: Dana darurat" required></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="label">Target nominal</label><input type="number" step="any" min="0" id="goalTarget" class="field mono-font font-bold" required></div>
+        <div><label class="label">Terkumpul saat ini</label><input type="number" step="any" min="0" id="goalCurrent" value="0" class="field mono-font font-bold" required></div>
+      </div>
+      <div><label class="label">Mata uang</label>
+        <select id="goalCurrency" class="field font-bold"><option value="IDR">IDR</option><option value="SAR">SAR</option><option value="USD">USD</option></select></div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="closeModal('goalModal')" class="btn bg-zinc-200 px-4 py-2 text-xs">Batal</button>
+        <button type="submit" class="btn bg-sunburst px-4 py-2 text-xs">Simpan Target</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ===== MODAL: LOGIN TELEPON ===== -->
+<div id="phoneModal" class="modal">
+  <div class="card w-full max-w-sm space-y-3">
+    <div class="flex justify-between items-center">
+      <h3 class="font-extrabold text-lg flex items-center gap-2"><i class="fa-solid fa-mobile-screen text-cobalt"></i> Masuk dengan Telepon</h3>
+      <button onclick="closeModal('phoneModal')" class="btn bg-coral text-white px-2.5 py-1 text-xs">✕</button>
+    </div>
+    <div><label class="label">Nomor telepon (format internasional)</label>
+      <input type="tel" id="phoneNumber" class="field mono-font" placeholder="+628123456789"></div>
+    <button id="sendOtpBtn" onclick="sendOtp()" class="btn w-full bg-cobalt text-white py-2 text-sm">Kirim Kode Verifikasi</button>
+    <div id="otpArea" class="hidden space-y-2">
+      <input type="text" inputmode="numeric" maxlength="6" id="otpCode" class="field mono-font" placeholder="Kode OTP">
+      <button onclick="verifyOtp()" class="btn w-full bg-mint text-white py-2 text-sm">Verifikasi Kode</button>
+    </div>
+    <div id="recaptcha-container"></div>
+  </div>
+</div>
+
+<!-- ===== MODAL: PANDUAN ===== -->
+<div id="guideModal" class="modal">
+  <div class="card w-full max-w-lg max-h-[85vh] overflow-y-auto space-y-4">
+    <div class="flex justify-between items-center border-b-2 border-ink pb-3">
+      <h3 class="font-extrabold text-lg flex items-center gap-2"><i class="fa-solid fa-book-open text-lavender"></i> Panduan Sinkronisasi</h3>
+      <button onclick="closeModal('guideModal')" class="btn bg-coral text-white px-2.5 py-1 text-xs">✕</button>
+    </div>
+    <div class="bg-cream border-2 border-ink p-3.5 rounded-lg text-sm text-zinc-700 leading-relaxed">
+      <h4 class="font-bold text-zinc-900 mb-1">☁️ Sinkron HP &amp; Laptop</h4>
+      <p>Masuk dengan metode yang sama di kedua perangkat (akun Google yang sama, atau nomor telepon yang sama). Setiap perubahan tersinkron otomatis lewat Cloud Firestore.</p>
+    </div>
+    <div class="flex justify-end"><button onclick="closeModal('guideModal')" class="btn bg-cobalt text-white px-5 py-2 text-xs">Mengerti</button></div>
+  </div>
+</div>
+
+<!-- ===== SCRIPT APLIKASI ===== -->
+<script>
+// ===== FIREBASE (opsional: aplikasi tetap jalan jika cloud gagal dimuat) =====
 const firebaseConfig = {
   apiKey: "AIzaSyAP_j57cExSQtEUUf-_6Pc9iVjVF1_uJM4",
   authDomain: "yourplannersyc.firebaseapp.com",
@@ -7,9 +343,20 @@ const firebaseConfig = {
   messagingSenderId: "217320094619",
   appId: "1:217320094619:web:376c18c42ae6ff79b97f3e"
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db = firebase.firestore();
+
+const CLOUD_MSG = "Cloud tidak aktif: library Firebase tidak termuat. Cek koneksi internet, VPN, atau ad blocker (gstatic.com mungkin diblokir).";
+let cloudReady = false;
+let auth = null;
+let db = null;
+try {
+  if (typeof firebase === "undefined") throw new Error("library Firebase tidak termuat");
+  firebase.initializeApp(firebaseConfig);
+  auth = firebase.auth();
+  db = firebase.firestore();
+  cloudReady = true;
+} catch (err) {
+  console.error("Firebase tidak aktif:", err);
+}
 
 // ===== STATE =====
 const LOCAL_KEY = "yourplanner_data_v2";
@@ -23,11 +370,15 @@ let unsubscribeCloud = null;
 let privacyMode = false;
 let current3DMode = "towers";
 let recaptchaVerifier = null;
-let barChart, donutChart;
-let scene, camera, renderer, meshGroup;
+let barChart = null, donutChart = null;
+let scene = null, camera = null, renderer = null, meshGroup = null;
 
 // ===== HELPER =====
 const $ = id => document.getElementById(id);
+
+function safe(label, fn) {
+  try { fn(); } catch (err) { console.error(label + " gagal:", err); }
+}
 
 function defaultData() {
   return { baseCurrency: "IDR", transactions: [], debts: [], savings: [] };
@@ -105,7 +456,7 @@ function loadLocal() {
 
 function save() {
   saveLocal();
-  if (currentUser) {
+  if (currentUser && cloudReady) {
     db.collection("users_financial_data").doc(currentUser.uid).set(appData)
       .catch(err => alert("Gagal menyimpan ke cloud: " + err.message));
   }
@@ -136,6 +487,7 @@ function stopCloud() {
 
 // ===== LOGIN =====
 function handleGoogleAuth() {
+  if (!cloudReady) return alert(CLOUD_MSG);
   if (currentUser) {
     const who = currentUser.email || currentUser.phoneNumber || "akun ini";
     if (confirm("Keluar dari " + who + "?")) auth.signOut();
@@ -148,6 +500,7 @@ function handleGoogleAuth() {
 }
 
 function sendOtp() {
+  if (!cloudReady) return alert(CLOUD_MSG);
   const phone = $("phoneNumber").value.trim();
   if (!/^\+\d{8,15}$/.test(phone)) {
     alert("Gunakan format internasional, contoh +628123456789");
@@ -305,7 +658,7 @@ function renderTransactions() {
   const f = $("filterTx").value;
   const rows = appData.transactions
     .filter(t => (f === "all" || t.type === f) &&
-      (t.desc.toLowerCase().includes(q) || t.category.toLowerCase().includes(q)))
+      (String(t.desc).toLowerCase().includes(q) || String(t.category).toLowerCase().includes(q)))
     .sort((a, b) => (b.date || "").localeCompare(a.date || "") || String(b.id).localeCompare(String(a.id)));
 
   if (!rows.length) {
@@ -371,7 +724,7 @@ function sortDebts(list, strategy) {
 }
 
 // Simulasi bulanan: bunga dihitung per bulan, cicilan minimum dibayar dulu,
-// sisa budget ekstra (termasuk minimum yang sudah lunas) diarahkan ke hutang prioritas.
+// sisa budget ekstra diarahkan ke hutang prioritas.
 function simulateDebts(debts, strategy, extra) {
   const items = debts.map(d => ({
     balance: d.amountIDR,
@@ -706,14 +1059,28 @@ function main() {
     if (e.key === "Escape") document.querySelectorAll(".modal.open").forEach(m => closeModal(m.id));
   });
 
-  initCharts();
-  init3D();
-  loadCachedRates();
-  loadLocal();
-  $("txDate").value = todayISO();
-  renderAll();
+  // Setiap bagian dibungkus safe() supaya satu library yang gagal tidak mematikan sisanya
+  safe("Grafik", initCharts);
+  safe("Diorama 3D", init3D);
+  safe("Ringkasan", () => {
+    loadCachedRates();
+    loadLocal();
+    $("txDate").value = todayISO();
+    renderAll();
+  });
+  updateAuthUI();
   fetchRates();
-  auth.onAuthStateChanged(onAuth);
+
+  if (cloudReady) {
+    auth.onAuthStateChanged(onAuth);
+  } else {
+    const banner = $("cloudBanner");
+    banner.textContent = CLOUD_MSG + " Data tetap tersimpan di perangkat ini.";
+    banner.classList.remove("hidden");
+  }
 }
 
 main();
+</script>
+</body>
+</html>
